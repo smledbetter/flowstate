@@ -392,44 +392,64 @@ PHASE 3: SHIP
 
 Flowstate ships as **markdown files + Claude Code skills** copied into a project:
 
-### 6.1 Core Files
+### 6.1 Repo Structure
 
-| File | Purpose |
-|------|---------|
-| `skills/product-manager.md` | Generic PM perspective |
-| `skills/ux-designer.md` | Generic UX perspective |
-| `skills/architect.md` | Orchestration, agent strategy, system design |
-| `skills/production-engineer.md` | Testing, quality gates, CI |
-| `skills/security-auditor.md` | Security review, threat modeling |
-| `skills/bootstrap.md` | Bootstrap a project from PRD (2-phase) |
-| `skills/sprint.md` | Run a sprint (3-phase lifecycle) |
-| `skills/retrospective.md` | Run retro, propose changes as diffs |
-| `templates/flowstate.config.md` | Default configuration |
-| `templates/acceptance.md` | Acceptance criteria template |
-| `templates/implementation.md` | Implementation plan template |
-| `templates/retrospective.md` | Retrospective template |
-| `templates/STATE.md` | Project state template |
+```
+Flowstate/
+├── PRD.md                          # This document
+├── RESULTS.md                      # Experiment data and hypothesis results
+├── skills/                         # Generic skill files (canonical set)
+│   ├── product-manager.md          # Gherkin acceptance criteria, user value
+│   ├── ux-designer.md              # User flows, interface standards
+│   ├── architect.md                # Module design, agent strategy, orchestration
+│   ├── production-engineer.md      # TDD, quality gates, test conventions
+│   └── security-auditor.md         # Threat review, input validation, audit
+├── tier-1/                         # Full: Claude Code + bash + metrics
+│   ├── sprint.md                   # Sprint prompt template (Phase 1+2 + Phase 3)
+│   ├── flowstate.config.md         # Config template with placeholder gates
+│   └── collect.sh                  # Metrics collector (auto-detects project)
+├── tier-2/                         # Skills + structure, no automated metrics
+│   ├── sprint.md                   # Sprint prompt (produces sanitized export)
+│   └── sanitized-export.md         # Redacted export template
+├── tier-3/                         # Prompt-only, any LLM
+│   └── sprint.md                   # Self-contained 3-phase prompt
+└── imports/                        # Sanitized exports from Tier 2 sprints
+```
 
-### 6.2 Invocable Skills
+### 6.2 How to Use
+
+**New project (Tier 1)**:
+1. Copy `skills/` into your project's `.claude/skills/` and adapt for your language/domain
+2. Copy `tier-1/flowstate.config.md` into your project root and fill in gate commands
+3. Copy `tier-1/collect.sh` into your project's `metrics/`
+4. Fill in `tier-1/sprint.md` with your milestone scope and paste to start
+
+**Work project (Tier 2)**:
+1. Copy `skills/` into your project's `.claude/skills/` and adapt
+2. Fill in `tier-2/sprint.md` with your scope and paste to start
+3. After the sprint, review the sanitized export and copy to `imports/`
+
+**Any LLM (Tier 3)**:
+1. Open `tier-3/sprint.md` and paste each phase prompt sequentially
+
+### 6.3 Invocable Skills (planned)
 
 | Command | Action |
 |---------|--------|
-| `/bootstrap` | Generate project structure from PRD.md (2-phase) |
+| `/bootstrap` | Generate project structure from PRD.md |
 | `/sprint` | Run a full sprint (all 3 phases) |
-| `/think` | Phase 1 only |
-| `/execute` | Phase 2 only |
-| `/ship` | Phase 3 only |
 | `/gate` | Run quality gates independently |
 | `/retro` | Run retrospective independently |
 | `/metrics` | Show metrics for current or all sprints |
-| `/status` | Show current project state |
 
-### 6.3 Deferred
+These are not yet implemented as Claude Code skill files. Currently, sprints are run by copy-pasting the prompt templates.
 
-- **Metrics collector**: Sprint 0 uses a shell script (`metrics/collect.sh`) that parses Claude Code JSONL session logs. If the log format changes in a future Claude Code update, fixing the parser is a Sprint 1 task.
-- **Node CLI**: deferred until markdown + skills prove insufficient.
-- **Dynamic agent strategy**: subagent-only in Sprint 0. Teams added in Sprint 2 after subagent patterns are validated.
-- **Skill generation from PRD**: deferred until Sprint 1+ reveals what good generated skills look like. Bootstrap uses copy + adapt.
+### 6.4 Deferred
+
+- **Invocable skill files**: sprint/bootstrap/retro as `.claude/skills/` that respond to `/commands`
+- **Node CLI**: deferred until markdown + skills prove insufficient
+- **Dynamic agent strategy**: subagent-only until agent teams are validated
+- **Skill generation from PRD**: deferred until evidence shows what good generated skills look like
 
 ## 7. What Flowstate is NOT
 
@@ -495,13 +515,15 @@ Honest accounting of the degradation:
 
 The scoreboard stays running. The improvement loop gets weaker — we keep the "what" but lose most of the "why." This is acceptable because the alternative (no feedback at all from work projects) is worse.
 
-### 9.5 Tier 2 Files
+### 9.5 Tier File Locations
 
-| File | Purpose |
-|------|---------|
-| `templates/SPRINT-TIER2.md` | Sprint prompt template for restricted environments |
-| `templates/sanitized-export.md` | Redacted export template (human fills in after reading full retro) |
-| `imports/` | Directory for imported sanitized exports, named `{codename}-sprint-{N}.md` |
+| Tier | Files | Purpose |
+|------|-------|---------|
+| **Tier 1** | `tier-1/sprint.md`, `tier-1/flowstate.config.md`, `tier-1/collect.sh` | Full sprint with automated metrics |
+| **Tier 2** | `tier-2/sprint.md`, `tier-2/sanitized-export.md` | Sprint with sanitized export, no bash metrics |
+| **Tier 3** | `tier-3/sprint.md` | Self-contained prompt for any LLM |
+| **Shared** | `skills/` (5 files) | Generic skill files, copied and adapted per project |
+| **Imports** | `imports/` | Sanitized exports from Tier 2, named `{codename}-sprint-{N}.md` |
 
 ## 10. Success Criteria
 

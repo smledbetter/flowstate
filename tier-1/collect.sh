@@ -1,0 +1,311 @@
+#!/usr/bin/env bash
+# Flowstate Sprint Metrics Collector
+# Parses Claude Code JSONL session logs for sprint metrics.
+#
+# Usage: ./metrics/collect.sh [--after <ISO-timestamp>] <session-id> [session-id...]
+#
+# The script auto-detects the project log directory from your current working
+# directory. It converts `pwd` to the Claude Code project slug format
+# (e.g., /Users/foo/Sites/MyProject -> -Users-foo-Sites-MyProject).
+#
+# Options:
+#   --after <timestamp>  Only count events after this ISO timestamp.
+#                        Use when a sprint started mid-session.
+#
+# Examples:
+#   ./metrics/collect.sh abc123-def456
+#   ./metrics/collect.sh --after 2026-02-18T03:20:00Z abc123-def456
+
+set -euo pipefail
+
+# Auto-detect project log directory from cwd
+PROJECT_SLUG=$(pwd | sed 's|/|-|g')
+PROJECT_LOGS="$HOME/.claude/projects/$PROJECT_SLUG"
+
+if [ ! -d "$PROJECT_LOGS" ]; then
+  echo "ERROR: No Claude Code session logs found at $PROJECT_LOGS"
+  echo "Make sure you're running this from the project root directory."
+  exit 1
+fi
+
+AFTER_TS=""
+
+# Parse --after flag
+if [ "${1:-}" = "--after" ]; then
+  AFTER_TS="$2"
+  shift 2
+fi
+
+if [ $# -eq 0 ]; then
+  echo "Usage: $0 [--after <ISO-timestamp>] <session-id> [session-id...]"
+  echo ""
+  echo "Options:"
+  echo "  --after <timestamp>  Only count events after this ISO timestamp"
+  echo ""
+  echo "Project logs: $PROJECT_LOGS"
+  echo ""
+  echo "Available sessions (most recent first):"
+  ls -t "$PROJECT_LOGS"/*.jsonl 2>/dev/null | while read -r f; do
+    sid=$(basename "$f" .jsonl)
+    first_ts=$(head -1 "$f" | python3 -c "import sys,json; print(json.load(sys.stdin).get('timestamp','?'))" 2>/dev/null)
+    last_ts=$(tail -1 "$f" | python3 -c "import sys,json; print(json.load(sys.stdin).get('timestamp','?'))" 2>/dev/null)
+    echo "  $sid  ($first_ts -> $last_ts)"
+  done | head -20
+  exit 1
+fi
+
+SESSION_IDS=("$@")
+
+echo "========================================"
+echo "  Flowstate Sprint Metrics Report"
+echo "========================================"
+if [ -n "$AFTER_TS" ]; then
+  echo "  (filtered: events after $AFTER_TS)"
+fi
+echo ""
+
+# Collect all JSONL files (parent sessions + their subagents)
+LOGFILES=()
+for sid in "${SESSION_IDS[@]}"; do
+  logfile="$PROJECT_LOGS/$sid.jsonl"
+  if [ ! -f "$logfile" ]; then
+    echo "WARNING: Session log not found: $logfile"
+    continue
+  fi
+  LOGFILES+=("$logfile")
+  # Include subagent session logs
+  subdir="$PROJECT_LOGS/$sid/subagents"
+  if [ -d "$subdir" ]; then
+    for subfile in "$subdir"/*.jsonl; do
+      [ -f "$subfile" ] && LOGFILES+=("$subfile")
+    done
+  fi
+done
+
+if [ ${#LOGFILES[@]} -eq 0 ]; then
+  echo "ERROR: No valid session logs found."
+  exit 1
+fi
+
+# --- ALL METRICS via single Python pass ---
+python3 -c "
+import json, sys
+from collections import defaultdict
+from datetime import datetime
+
+after_ts = '$AFTER_TS' if '$AFTER_TS' else None
+after_dt = None
+if after_ts:
+    after_dt = datetime.fromisoformat(after_ts.replace('Z', '+00:00'))
+
+logfiles = sys.argv[1:]
+
+# Per-session wall time
+session_times = {}
+is_subagent = {}
+
+# Token counters
+input_tokens = 0
+output_tokens = 0
+cache_read = 0
+cache_creation = 0
+model_tokens = defaultdict(lambda: {'input': 0, 'output': 0, 'cache_read': 0, 'cache_creation': 0})
+
+# Counts
+spawn_count = 0
+api_count = 0
+human_idle_seconds = 0  # gaps between assistant and next human entry (>60s)
+
+for logfile in logfiles:
+    sid = logfile.rsplit('/', 1)[-1].replace('.jsonl', '')
+    is_sub = '/subagents/' in logfile
+    is_subagent[sid] = is_sub
+    first_ts = None
+    last_ts = None
+
+    with open(logfile) as f:
+        for line in f:
+            try:
+                d = json.loads(line)
+            except:
+                continue
+
+            ts_str = d.get('timestamp')
+            if not ts_str:
+                continue
+
+            # Filter by --after
+            if after_dt:
+                try:
+                    event_dt = datetime.fromisoformat(ts_str.replace('Z', '+00:00'))
+                    if event_dt < after_dt:
+                        continue
+                except:
+                    continue
+
+            # Track wall time
+            if first_ts is None:
+                first_ts = ts_str
+            last_ts = ts_str
+
+            # Token usage (assistant messages only)
+            if d.get('type') == 'assistant':
+                api_count += 1
+                msg = d.get('message', {})
+                usage = msg.get('usage', {})
+                model = msg.get('model', 'unknown')
+
+                inp = usage.get('input_tokens', 0)
+                out = usage.get('output_tokens', 0)
+                cr = usage.get('cache_read_input_tokens', 0)
+                cc = usage.get('cache_creation_input_tokens', 0)
+
+                input_tokens += inp
+                output_tokens += out
+                cache_read += cr
+                cache_creation += cc
+
+                model_tokens[model]['input'] += inp
+                model_tokens[model]['output'] += out
+                model_tokens[model]['cache_read'] += cr
+                model_tokens[model]['cache_creation'] += cc
+
+            # Agent spawn count - Task tool_use is nested in assistant message content blocks
+            if d.get('type') == 'assistant':
+                content_blocks = d.get('message', {}).get('content', [])
+                if isinstance(content_blocks, list):
+                    for block in content_blocks:
+                        if isinstance(block, dict) and block.get('type') == 'tool_use' and block.get('name') == 'Task':
+                            spawn_count += 1
+
+    if first_ts and last_ts:
+        t1 = datetime.fromisoformat(first_ts.replace('Z', '+00:00'))
+        t2 = datetime.fromisoformat(last_ts.replace('Z', '+00:00'))
+        session_times[sid] = (t2 - t1).total_seconds()
+    else:
+        session_times[sid] = 0
+
+# --- Human idle time (parent sessions only) ---
+IDLE_THRESHOLD = 60  # seconds
+
+for logfile in logfiles:
+    if '/subagents/' in logfile:
+        continue
+    last_assistant_dt = None
+    with open(logfile) as f:
+        for line in f:
+            try:
+                d = json.loads(line)
+            except:
+                continue
+            ts_str = d.get('timestamp')
+            if not ts_str:
+                continue
+            if after_dt:
+                try:
+                    event_dt = datetime.fromisoformat(ts_str.replace('Z', '+00:00'))
+                    if event_dt < after_dt:
+                        continue
+                except:
+                    continue
+            else:
+                event_dt = datetime.fromisoformat(ts_str.replace('Z', '+00:00'))
+
+            if d.get('type') == 'assistant':
+                last_assistant_dt = event_dt
+            elif d.get('type') == 'human' and last_assistant_dt:
+                gap = (event_dt - last_assistant_dt).total_seconds()
+                if gap > IDLE_THRESHOLD:
+                    human_idle_seconds += gap
+                last_assistant_dt = None
+
+# --- Output ---
+
+print('## Wall Time')
+print()
+parent_seconds = 0
+sub_seconds = 0
+parent_sessions = []
+sub_sessions = []
+for sid, secs in session_times.items():
+    if is_subagent.get(sid, False):
+        sub_sessions.append((sid, secs))
+        sub_seconds += secs
+    else:
+        parent_sessions.append((sid, secs))
+        parent_seconds += secs
+
+for sid, secs in parent_sessions:
+    mins = int(secs) // 60
+    s = int(secs) % 60
+    print(f'  Parent session {sid[:8]}...: {mins}m {s}s')
+print()
+
+active_subs = [(sid, secs) for sid, secs in sub_sessions if secs > 0]
+if active_subs:
+    print(f'  Subagent sessions: {len(active_subs)}')
+    for sid, secs in active_subs:
+        mins = int(secs) // 60
+        s = int(secs) % 60
+        print(f'    {sid[:16]}...: {mins}m {s}s')
+    print()
+
+# Wall time = parent session duration (subagents run in parallel within it)
+total_mins = int(parent_seconds) // 60
+total_secs = int(parent_seconds) % 60
+print(f'  WALL TIME: {total_mins}m {total_secs}s  (parent session duration)')
+
+idle_mins = int(human_idle_seconds) // 60
+idle_secs = int(human_idle_seconds) % 60
+agent_seconds = parent_seconds - human_idle_seconds
+agent_mins = int(max(0, agent_seconds)) // 60
+agent_secs = int(max(0, agent_seconds)) % 60
+print(f'  Human idle: {idle_mins}m {idle_secs}s  (gaps > 60s between assistant and human entries)')
+print(f'  Agent active: {agent_mins}m {agent_secs}s  (session time minus human idle)')
+print()
+
+print('## Token Usage')
+print()
+total = input_tokens + output_tokens + cache_read + cache_creation
+new_work = input_tokens + output_tokens + cache_creation
+cache_pct = (cache_read / total * 100) if total > 0 else 0
+
+print(f'  Input tokens:          {input_tokens:>12,}')
+print(f'  Output tokens:         {output_tokens:>12,}')
+print(f'  Cache read tokens:     {cache_read:>12,}')
+print(f'  Cache creation tokens: {cache_creation:>12,}')
+print(f'  -----------------------------------')
+print(f'  Total tokens:          {total:>12,}')
+print(f'  New-work tokens:       {new_work:>12,}  (input + output + cache_creation)')
+print(f'  Cache hit rate:        {cache_pct:>11.1f}%')
+print()
+
+print('## Model Mix')
+print()
+for model, counts in sorted(model_tokens.items()):
+    mtotal = counts['input'] + counts['output'] + counts['cache_read'] + counts['cache_creation']
+    pct = (mtotal / total * 100) if total > 0 else 0
+    print(f'  {model}: {mtotal:>12,} tokens ({pct:.1f}%)')
+print()
+
+print('## Agent Spawn Count')
+print()
+print(f'  Subagents spawned: {spawn_count}')
+print()
+
+print('## API Calls')
+print()
+print(f'  Total API calls: {api_count}')
+print()
+" "\${LOGFILES[@]}"
+
+echo "========================================"
+echo "  Run these manually:"
+echo "========================================"
+echo ""
+echo "  # LOC delta:"
+echo "  git diff --stat {start-sha}..HEAD"
+echo ""
+echo "  # Test count / coverage:"
+echo "  (use your project's test and coverage commands)"
+echo ""
