@@ -685,6 +685,114 @@
           "evidence": "2 complied, 1 N/A, 2 NO (1 carry-forward threat model, 1 infeasible crypto constraint)"
         }
       ]
+    },
+    {
+      "project": "uluka",
+      "sprint": 7,
+      "label": "Uluka S7",
+      "phase": "Phase 21: Crypto Library Knowledge Base (NO-FLOWSTATE BASELINE)",
+      "experiment": "exp1_baseline",
+      "metrics": {
+        "active_session_time_s": 338,
+        "active_session_time_display": "5m 38s",
+        "total_tokens": 2300000,
+        "total_tokens_display": "2.3M",
+        "new_work_tokens": 123000,
+        "new_work_tokens_display": "123K",
+        "cache_hit_rate_pct": 94.7,
+        "opus_pct": 100.0,
+        "sonnet_pct": 0,
+        "haiku_pct": 0,
+        "subagents": 0,
+        "subagent_note": "no subagents used",
+        "api_calls": 40,
+        "tests_total": 520,
+        "tests_added": 42,
+        "coverage_pct": null,
+        "lint_errors": 0,
+        "gates_first_pass": true,
+        "gates_first_pass_note": "manual: tsc + vitest + lint all pass",
+        "loc_added": 963,
+        "loc_added_approx": false
+      },
+      "hypotheses": [
+        {
+          "id": "H1",
+          "name": "3-phase sprint works across project types",
+          "result": "inconclusive",
+          "evidence": "Baseline completed without phases. 7.7x faster than Flowstate avg. Structure adds overhead on well-scoped milestones."
+        },
+        {
+          "id": "H7",
+          "name": "Skills are followed by agents",
+          "result": "inconclusive",
+          "evidence": "No skills loaded. Blind quality review: 19/25 (76%) vs self-assessed 100% on Flowstate sprints. Input validation weakest (3/5)."
+        }
+      ],
+      "quality_review": {
+        "method": "blind_5_dimension",
+        "acceptance_criteria": 4,
+        "module_boundaries": 5,
+        "test_first_evidence": 4,
+        "input_validation": 3,
+        "error_messages": 3,
+        "total": 19,
+        "total_pct": 76
+      }
+    },
+    {
+      "project": "dappled-shade",
+      "sprint": 5,
+      "label": "DS S5",
+      "phase": "M3 Phase 2: Mesh Resilience (NO-FLOWSTATE BASELINE)",
+      "experiment": "exp1_baseline",
+      "metrics": {
+        "active_session_time_s": 379,
+        "active_session_time_display": "6m 19s",
+        "total_tokens": 5105783,
+        "total_tokens_display": "5.1M",
+        "new_work_tokens": 185236,
+        "new_work_tokens_display": "185K",
+        "cache_hit_rate_pct": 96.4,
+        "opus_pct": 100.0,
+        "sonnet_pct": 0,
+        "haiku_pct": 0,
+        "subagents": 0,
+        "subagent_note": "no subagents used",
+        "api_calls": 68,
+        "tests_total": 164,
+        "tests_added": 19,
+        "coverage_pct": null,
+        "lint_errors": 0,
+        "gates_first_pass": true,
+        "gates_first_pass_note": "manual: cargo build + clippy + test all pass",
+        "loc_added": 1338,
+        "loc_added_approx": false
+      },
+      "hypotheses": [
+        {
+          "id": "H1",
+          "name": "3-phase sprint works across project types",
+          "result": "inconclusive",
+          "evidence": "Baseline completed without phases. 4.4x faster than DS Flowstate avg. Structure adds overhead on well-scoped milestones."
+        },
+        {
+          "id": "H7",
+          "name": "Skills are followed by agents",
+          "result": "inconclusive",
+          "evidence": "No skills loaded. Blind quality review: 22/25 (88%) vs self-assessed 100% on Flowstate sprints. Dead code found (process_message_resilient)."
+        }
+      ],
+      "quality_review": {
+        "method": "blind_5_dimension",
+        "acceptance_criteria": 4,
+        "module_boundaries": 5,
+        "test_first_evidence": 4,
+        "input_validation": 5,
+        "error_messages": 4,
+        "total": 22,
+        "total_pct": 88
+      }
     }
   ]
 }
