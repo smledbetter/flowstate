@@ -119,7 +119,11 @@ Run the Phase 3 retrospective for Sprint N.
          "judge_block_reason": "<reason string if blocked, or null>",
          "coderabbit_issues": "<number of CodeRabbit issues on PR, or null if no PR>",
          "coderabbit_issues_valid": "<number human agreed were real, or null>",
-         "mutation_score_pct": "<mutation score % if run, or null>"
+         "mutation_score_pct": "<mutation score % if run, or null>",
+         "delegation_ratio_pct": "<from sprint-N-report.json — subagent tokens / total tokens %, or null if no subagents>",
+         "orchestrator_tokens": "<from sprint-N-report.json>",
+         "subagent_tokens": "<from sprint-N-report.json>",
+         "context_compressions": "<from sprint-N-report.json — number of context compression events>"
        },
        "hypotheses": [
          // Use IDs and names from hypotheses.json in the Flowstate repo.

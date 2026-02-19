@@ -762,13 +762,14 @@ def main():
     else:
         print(f"    ~/.flowstate/{slug}/flowstate.config.md (exists, skipped)")
 
-    # collect.sh (Tier 1 only)
+    # collect.sh (Tier 1 only) — symlink to repo so updates propagate automatically
     if tier == 1:
         collect_src = os.path.join(FLOWSTATE_REPO, "tier-1", "collect.sh")
         collect_dst = os.path.join(metrics_dir, "collect.sh")
-        shutil.copy2(collect_src, collect_dst)
-        os.chmod(collect_dst, 0o755)
-        print(f"    ~/.flowstate/{slug}/metrics/collect.sh")
+        if os.path.exists(collect_dst) or os.path.islink(collect_dst):
+            os.remove(collect_dst)
+        os.symlink(collect_src, collect_dst)
+        print(f"    ~/.flowstate/{slug}/metrics/collect.sh -> {collect_src}")
 
     # retrospectives/
     print(f"    ~/.flowstate/{slug}/retrospectives/")

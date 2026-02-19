@@ -216,9 +216,12 @@ Metrics are organized into **primary** (drive decisions) and **diagnostic** (inv
 | Test count (new + total) | When gate failures spike |
 | Coverage delta | When coverage threshold is barely met |
 | Defects found by gate (by type) | When first-pass success rate drops — what's failing? |
-| Context utilization at session end | When quality degrades late in a sprint |
+| Delegation ratio (subagent tokens / total tokens %) | When orchestrator context grows too large or quality degrades late in sprint |
+| Context compressions (count of `compact_boundary` events) | When quality degrades late in sprint — 0 = context fit, >0 = window filled up |
 
-**What we explicitly don't track** (yet): LOC as a productivity metric, skill change "impact" (no causal mechanism), "context utilization %" as a quality proxy (high read-to-write ratios can be correct behavior).
+**What we explicitly don't track** (yet): LOC as a productivity metric, skill change "impact" (no causal mechanism).
+
+**Context efficiency**: Delegation ratio and context compressions replace the earlier "context utilization at session end" concept. Delegation ratio measures how well the orchestrator delegates (higher = more work in fresh subagent windows). Context compressions count how many times Claude Code's auto-compaction fired during the session — detected via `compact_boundary` system events in the JSONL logs. Both are computed automatically by `collect.sh`.
 
 Metrics are stored in `~/.flowstate/{project-slug}/metrics/` (reports, baselines, gate logs). Cross-project metrics live in the Flowstate repo's `sprints.json`.
 

@@ -121,6 +121,7 @@ spawn_msgs = set()  # msg_ids that contained a Task spawn
 
 # Counts
 spawn_count = 0
+compact_count = 0  # context compression events
 parent_timestamps = []  # all timestamps from parent sessions, for gap-summed active time
 edit_counts = defaultdict(int)  # file_path -> number of Edit/Write operations
 
@@ -159,6 +160,11 @@ for logfile in logfiles:
             # Collect parent timestamps for gap-summed active time
             if not is_sub:
                 parent_timestamps.append(ts_str)
+
+            # Context compression events
+            if d.get('type') == 'system' and d.get('subtype') == 'compact_boundary':
+                if not is_sub:
+                    compact_count += 1
 
             # Assistant messages: deduplicate by message ID
             if d.get('type') == 'assistant':
@@ -205,6 +211,9 @@ cache_creation = 0
 model_tokens = defaultdict(lambda: {'input': 0, 'output': 0, 'cache_read': 0, 'cache_creation': 0})
 api_count = len(msg_data)
 
+orchestrator_tokens = 0
+subagent_tokens = 0
+
 for mid, data in msg_data.items():
     usage = data['usage']
     model = data['model']
@@ -212,6 +221,7 @@ for mid, data in msg_data.items():
     out = usage.get('output_tokens', 0)
     cr = usage.get('cache_read_input_tokens', 0)
     cc = usage.get('cache_creation_input_tokens', 0)
+    msg_total = inp + out + cr + cc
     input_tokens += inp
     output_tokens += out
     cache_read += cr
@@ -220,6 +230,10 @@ for mid, data in msg_data.items():
     model_tokens[model]['output'] += out
     model_tokens[model]['cache_read'] += cr
     model_tokens[model]['cache_creation'] += cc
+    if data['is_subagent']:
+        subagent_tokens += msg_total
+    else:
+        orchestrator_tokens += msg_total
 
 IDLE_THRESHOLD = 60  # seconds — gaps larger than this are counted as idle
 
@@ -293,6 +307,10 @@ if json_output:
         'subagent_note': None,
         'api_calls': api_count,
         'rework_rate': rework_rate,
+        'delegation_ratio_pct': round(subagent_tokens / total * 100, 1) if total > 0 and subagent_tokens > 0 else None,
+        'orchestrator_tokens': orchestrator_tokens,
+        'subagent_tokens': subagent_tokens,
+        'context_compressions': compact_count,
     }
     print(json.dumps(result, indent=2))
     sys.exit(0)
@@ -354,6 +372,19 @@ print()
 print('## Agent Spawn Count')
 print()
 print(f'  Subagents spawned: {spawn_count}')
+print()
+
+print('## Context Efficiency')
+print()
+if subagent_tokens > 0:
+    deleg_pct = subagent_tokens / total * 100
+    print(f'  Orchestrator tokens: {orchestrator_tokens:>12,} ({orchestrator_tokens / total * 100:.1f}%)')
+    print(f'  Subagent tokens:     {subagent_tokens:>12,} ({deleg_pct:.1f}%)')
+    print(f'  Delegation ratio:    {deleg_pct:>11.1f}%  (higher = more work delegated)')
+else:
+    print(f'  Orchestrator tokens: {orchestrator_tokens:>12,} (100% — no subagents)')
+    print(f'  Delegation ratio:          N/A  (single-agent sprint)')
+print(f'  Context compressions:      {compact_count}  (0 = context fit comfortably)')
 print()
 
 print('## API Calls')

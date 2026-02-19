@@ -297,6 +297,40 @@ def validate_entry(entry):
         else:
             check_range("mutation_score_pct", msp, 0, 100, "metrics.mutation_score_pct")
 
+    # delegation_ratio_pct: float or null, range [0, 100]
+    drp = m.get("delegation_ratio_pct")
+    if drp is not None:
+        if not isinstance(drp, (int, float)):
+            errors.append(
+                f"metrics.delegation_ratio_pct: must be numeric or null, got {type(drp).__name__}"
+            )
+        else:
+            check_range("delegation_ratio_pct", drp, 0, 100, "metrics.delegation_ratio_pct")
+
+    # orchestrator_tokens: int or null
+    ot = m.get("orchestrator_tokens")
+    if ot is not None and not isinstance(ot, int):
+        errors.append(
+            f"metrics.orchestrator_tokens: must be int or null, got {type(ot).__name__}"
+        )
+
+    # subagent_tokens: int or null
+    st = m.get("subagent_tokens")
+    if st is not None and not isinstance(st, int):
+        errors.append(
+            f"metrics.subagent_tokens: must be int or null, got {type(st).__name__}"
+        )
+
+    # context_compressions: int or null, range [0, 50]
+    cc_count = m.get("context_compressions")
+    if cc_count is not None:
+        if not isinstance(cc_count, int):
+            errors.append(
+                f"metrics.context_compressions: must be int or null, got {type(cc_count).__name__}"
+            )
+        else:
+            check_range("context_compressions", cc_count, 0, 50, "metrics.context_compressions")
+
     # --- Normalizations ---
 
     # gates_first_pass_note: normalize "" to null when gates passed
@@ -460,6 +494,10 @@ def import_from_file(path, dry_run=False):
             print(f"    CodeRabbit: {criv}/{cri} valid")
         if m.get("mutation_score_pct") is not None:
             print(f"    Mutation score: {m['mutation_score_pct']}%")
+        if m.get("delegation_ratio_pct") is not None:
+            print(f"    Delegation ratio: {m['delegation_ratio_pct']}%")
+        if m.get("context_compressions") is not None:
+            print(f"    Context compressions: {m['context_compressions']}")
         if warnings:
             print(f"    Auto-corrections: {len(warnings)}")
         print(f"\n  Validation passed. Run without --dry-run to import.")
@@ -666,6 +704,10 @@ def interactive_import(project, sprint_num):
             "new_work_tokens": json_report["new_work_tokens"],
             "new_work_tokens_display": json_report["new_work_tokens_display"],
             "cache_hit_rate_pct": json_report.get("cache_hit_rate_pct"),
+            "delegation_ratio_pct": json_report.get("delegation_ratio_pct"),
+            "orchestrator_tokens": json_report.get("orchestrator_tokens"),
+            "subagent_tokens": json_report.get("subagent_tokens"),
+            "context_compressions": json_report.get("context_compressions"),
             "opus_pct": json_report["opus_pct"],
             "sonnet_pct": json_report["sonnet_pct"],
             "haiku_pct": json_report["haiku_pct"],
