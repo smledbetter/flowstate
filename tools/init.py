@@ -1,18 +1,23 @@
 #!/usr/bin/env python3
-"""Bootstrap a new Tier 1 Flowstate project from a PRD.
+"""Bootstrap a new Flowstate project from a PRD.
 
 Usage:
     cd /path/to/new-project    # PRD.md must exist here
-    python3 ~/Sites/Flowstate/tools/init.py
+    python3 ~/Sites/Flowstate/tools/init.py [--tier 1|2]
+
+Options:
+    --tier 1    Full Claude Code with bash, automated metrics (default)
+    --tier 2    Skills + structure, no automated metrics. Produces sanitized exports.
 
 Reads PRD.md, infers project name, description, and language/stack.
 Creates everything needed for Sprint 0 with zero prompts.
 
 Creates:
-    ~/.flowstate/{slug}/           (flowstate.config.md, metrics/collect.sh, retrospectives/)
+    ~/.flowstate/{slug}/           (flowstate.config.md, metrics/, retrospectives/)
+    ~/.flowstate/{slug}/metrics/collect.sh  (Tier 1 only)
     ~/.flowstate/hypotheses.json   (shared registry, if not already present)
     .claude/skills/                (5 generic skill files)
-    CLAUDE.md                      (generated sprint workflow)
+    CLAUDE.md                      (generated sprint workflow, tier-specific)
 """
 
 import json
@@ -496,6 +501,174 @@ When all gates pass, say: "Ready for Phase 3: SHIP whenever you want to proceed.
 """
 
 
+def generate_claude_md_tier2(name, description, slug, gates, label_prefix, language):
+    gate_lines = "\n".join(f"  {i + 1}. `{cmd}`" for i, cmd in enumerate(gates))
+
+    # Gate TODO marker if language wasn't detected
+    gate_note = ""
+    if not language:
+        gate_note = "\n<!-- TODO: Gate commands are placeholders. Sprint 0 should verify and update these. -->"
+
+    return f"""# {name}
+
+{description}
+
+## Flowstate Sprint Workflow (Tier 2)
+
+This project uses the Flowstate sprint process (Tier 2: skills + structure, no automated metrics). Metrics are agent-estimated. The retro produces a sanitized export that the human brings back to the Flowstate repo.
+
+### File Locations
+
+- **Flowstate dir**: `~/.flowstate/{slug}/`
+- **Config**: `~/.flowstate/{slug}/flowstate.config.md` (quality gates, agent strategy)
+- **Baselines**: `~/.flowstate/{slug}/metrics/baseline-sprint-N.md`
+- **Retrospectives**: `~/.flowstate/{slug}/retrospectives/sprint-N.md`
+- **Progress**: `~/.flowstate/{slug}/progress.md` (operational state for next session)
+- **Roadmap**: `docs/ROADMAP.md` (in this repo -- create if missing)
+- **Skills**: `.claude/skills/` (in this repo)
+
+### How to Determine the Next Sprint
+
+1. If no `docs/ROADMAP.md` exists, this is Sprint 0 (see below).
+2. Read `docs/ROADMAP.md` -- find the first phase not marked done.
+3. Find the highest-numbered baseline in `~/.flowstate/{slug}/metrics/` -- that's your sprint number.
+4. Read that baseline for starting state, gate commands, and H7 audit instructions.
+
+### Sprint 0: Project Setup (planning only -- no code)
+
+Sprint 0 is a dedicated planning sprint. It produces the roadmap, baseline, and conventions that all future sprints depend on. No code is written.
+
+**Phase 1+2: RESEARCH then PLAN**
+
+Read these files:
+- `PRD.md` (fully -- every section)
+- `~/.flowstate/{slug}/flowstate.config.md`
+- All files in `.claude/skills/`
+- `~/.flowstate/hypotheses.json`
+
+Then do ALL of the following:
+
+1. **Verify gate commands.** Run each gate command below. If any don't work for this project (wrong tool, missing dependency), update them in this file AND in `~/.flowstate/{slug}/flowstate.config.md`. Record what works and what doesn't.
+{gate_lines}{gate_note}
+
+2. **Create `docs/ROADMAP.md`.**
+   - Break PRD milestones into sprint-sized phases. Each phase = one sprint.
+   - Right-sizing guide: a phase should be deliverable in 10-60 minutes of active agent time, produce 500-2500 LOC, and have a clear "done" state that gates can verify.
+   - Phases that are mostly research or refactoring will be smaller. Phases that build new features from scratch will be larger.
+   - Number phases starting from 1 (Sprint 0 is this planning sprint).
+   - Include a "Current State" section at the top (tests, coverage, LOC, milestone status).
+
+3. **Fill in the Conventions section** at the bottom of this file:
+   - Language, framework, test runner
+   - Lint rules and coverage floors
+   - Coding standards specific to this stack
+   - Any constraints from the PRD (e.g., "no .unwrap() on network data", "strict mode")
+
+4. **Write the initial baseline** at `~/.flowstate/{slug}/metrics/baseline-sprint-1.md`:
+   - Current git SHA, test count (0 if greenfield), coverage status
+   - Gate commands and whether each passes right now
+   - 5 H7 instructions picked from `.claude/skills/` to audit in Sprint 1
+
+5. **Commit**: `git add -A && git commit -m "sprint 0: project setup"`
+
+When done, say: "Ready for Phase 3: SHIP whenever you want to proceed."
+
+**Phase 3: SHIP**
+
+Sprint 0's Phase 3:
+1. Write `~/.flowstate/{slug}/retrospectives/sprint-0.md` (what was planned, gate verification results, any issues found)
+2. Hypothesis results: at minimum H1 and H11 (does the process work for this project type?)
+3. Produce a SANITIZED EXPORT (see Phase 3 below for format)
+4. Write progress file at `~/.flowstate/{slug}/progress.md`
+5. Completion check (see Phase 3 below)
+
+---
+
+### Phase 1+2: THINK then EXECUTE (Sprint 1+)
+
+Read these files first:
+- `PRD.md`
+- `docs/ROADMAP.md` (find this sprint's phase)
+- The current baseline (see above)
+- `~/.flowstate/{slug}/progress.md` (if exists -- operational state from last session)
+- `~/.flowstate/{slug}/flowstate.config.md`
+- The previous sprint's retro (if exists)
+- All files in `.claude/skills/`
+- `~/.flowstate/hypotheses.json` (canonical hypothesis IDs, names, valid results)
+
+**THINK**: Acting as a consensus agent with all 5 skill perspectives (PM, UX, Architect, Production Engineer, Security Auditor):
+0. FEASIBILITY CHECK: List new external dependencies, verify they exist in the registry, run a minimal spike on the highest-risk task. Flag unverified or experimental deps with a fallback plan. If the spike fails, revise scope before proceeding. Confirm a formatter AND linter are configured as gates -- if either is missing, set one up now.
+1. Write acceptance criteria in Gherkin format for the phase scope
+2. Produce a wave-based implementation plan (group tasks by file dependency; parallel where no shared files)
+3. For each task: files to read, files to write, agent model (haiku for mechanical, sonnet for reasoning)
+
+**EXECUTE**: Immediately after planning -- do NOT wait for human approval:
+- Spawn subagents per wave
+- Each subagent gets file path references (not content), task scope, relevant skill context
+- Commit atomically after each wave (single commit is acceptable for sequential waves sharing no files)
+- Do NOT read full implementation files into orchestrator context -- delegate to subagents
+- Run quality gates IN ORDER after all waves:
+{gate_lines}{gate_note}
+- If bash is available, save gate output to `~/.flowstate/{slug}/metrics/sprint-N-gates.log`
+- If not, paste the gate output into the retrospective under a "## Gate Log" section
+- If any gate fails: classify as REGRESSION or FEATURE, fix, re-run, max 3 cycles
+
+When all gates pass, say: "Ready for Phase 3: SHIP whenever you want to proceed."
+
+### Phase 3: SHIP
+
+1. **Write retrospective** at `~/.flowstate/{slug}/retrospectives/sprint-N.md`:
+   - What was built (deliverables, test count, files changed)
+   - What worked / what failed, with evidence
+   - H7 audit: check the 5 instructions listed in the baseline
+   - Change proposals as diffs (with `- Before` / `+ After` blocks). Prefer removing or simplifying instructions over adding new ones.
+
+2. **Hypothesis results table** (include at minimum H1, H5, H7)
+
+3. **Sanitized export** -- produce a markdown document starting with "# Flowstate Sanitized Sprint Export". This will leave this environment, so it must contain NO proprietary code, architecture details, file paths, business logic, or project-specific content. Only include:
+   - Sprint number, language/framework, generalized scope description
+   - Metrics: estimate your active session time, count subagents spawned, count tests added, gate pass/fail
+   - Task type: feature, bugfix, refactor, infra, planning, or hardening
+   - Hypothesis results: H1 (3-phase worked?), H5 (gates caught issues?), H7 (X/5 compliance)
+   - Skill change proposals GENERALIZED: strip project-specific details, describe the pattern not the implementation
+   - Process observations: did the single prompt work? friction points? what would you change?
+
+4. **Do NOT apply skill changes** -- proposals stay in the retro for human review
+
+5. **Commit**: `git add -A && git commit -m "sprint N: [generalized description]"`
+
+6. **Write next baseline** at `~/.flowstate/{slug}/metrics/baseline-sprint-{{N+1}}.md`:
+   - Current git SHA, test count, coverage %, lint error count
+   - Gate commands and current status
+   - 5 H7 instructions to audit next sprint (rotate from skills)
+
+7. **Update roadmap**: mark this phase done in `docs/ROADMAP.md`, update Current State section
+
+8. **Write progress file** at `~/.flowstate/{slug}/progress.md`:
+   - What was completed this sprint (list of deliverables)
+   - What failed or was deferred (and why)
+   - What the next session should do first
+   - Any blocked items or external dependencies awaiting resolution
+   - Current gate status (all passing? which ones?)
+   This is operational state for the next agent session, not analysis. Overwrite any previous progress.md.
+
+9. **Completion check** -- print this checklist with [x] or [MISSING] for each:
+   - retrospectives/sprint-N.md has hypothesis table (H1, H5, H7) and change proposals
+   - Sanitized export produced (starting with "# Flowstate Sanitized Sprint Export")
+   - metrics/baseline-sprint-{{N+1}}.md exists with SHA, tests, coverage, gates, H7 instructions
+   - progress.md written (current state for next session)
+   - docs/ROADMAP.md updated
+   - Code committed
+   Fix any MISSING items before declaring done.
+
+## Conventions
+
+- Start each sprint in a fresh session. One sprint = one session.
+
+<!-- TODO: Sprint 0 fills in language-specific conventions below -->
+"""
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -503,6 +676,17 @@ When all gates pass, say: "Ready for Phase 3: SHIP whenever you want to proceed.
 
 def main():
     project_dir = os.getcwd()
+
+    # Parse --tier flag
+    tier = 1
+    args = sys.argv[1:]
+    if "--tier" in args:
+        idx = args.index("--tier")
+        if idx + 1 < len(args) and args[idx + 1] in ("1", "2"):
+            tier = int(args[idx + 1])
+        else:
+            print("\n  ERROR: --tier requires 1 or 2 (e.g., --tier 2)")
+            sys.exit(1)
 
     # Check PRD.md exists
     prd_path = os.path.join(project_dir, "PRD.md")
@@ -534,7 +718,7 @@ def main():
     flowstate_dir = os.path.join(FLOWSTATE_HOME, slug)
 
     # Print what we inferred
-    print(f"\n  Flowstate Tier 1 Bootstrap")
+    print(f"\n  Flowstate Tier {tier} Bootstrap")
     print(f"  PRD: {prd_path}\n")
     print(f"    Name:        {name}")
     print(f"    Slug:        {slug}")
@@ -578,12 +762,13 @@ def main():
     else:
         print(f"    ~/.flowstate/{slug}/flowstate.config.md (exists, skipped)")
 
-    # collect.sh
-    collect_src = os.path.join(FLOWSTATE_REPO, "tier-1", "collect.sh")
-    collect_dst = os.path.join(metrics_dir, "collect.sh")
-    shutil.copy2(collect_src, collect_dst)
-    os.chmod(collect_dst, 0o755)
-    print(f"    ~/.flowstate/{slug}/metrics/collect.sh")
+    # collect.sh (Tier 1 only)
+    if tier == 1:
+        collect_src = os.path.join(FLOWSTATE_REPO, "tier-1", "collect.sh")
+        collect_dst = os.path.join(metrics_dir, "collect.sh")
+        shutil.copy2(collect_src, collect_dst)
+        os.chmod(collect_dst, 0o755)
+        print(f"    ~/.flowstate/{slug}/metrics/collect.sh")
 
     # retrospectives/
     print(f"    ~/.flowstate/{slug}/retrospectives/")
@@ -611,9 +796,14 @@ def main():
     print(f"    .claude/skills/ ({skill_count} files)")
 
     # --- Generate CLAUDE.md ---
-    claude_md = generate_claude_md(
-        name, description, slug, gates, label_prefix, language
-    )
+    if tier == 2:
+        claude_md = generate_claude_md_tier2(
+            name, description, slug, gates, label_prefix, language
+        )
+    else:
+        claude_md = generate_claude_md(
+            name, description, slug, gates, label_prefix, language
+        )
     claude_path = os.path.join(project_dir, "CLAUDE.md")
     with open(claude_path, "w") as f:
         f.write(claude_md)

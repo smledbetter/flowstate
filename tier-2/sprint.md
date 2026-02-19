@@ -21,7 +21,10 @@ You are running a Flowstate sprint.
 Read these files:
 - All skill files in .claude/skills/
 - docs/ROADMAP.md (this sprint's phase)
+- [{FLOWSTATE}/metrics/baseline-sprint-N.md] (current state: tests, coverage, lint)
 - [{FLOWSTATE}/progress.md] (if exists -- operational state from last session)
+- {FLOWSTATE}/flowstate.config.md (quality gates)
+- [{FLOWSTATE}/retrospectives/sprint-{N-1}.md] (last retro, if exists)
 - [project config / requirements -- adapt this list to your project]
 
 PHASE 1 -- THINK:
@@ -58,6 +61,9 @@ Gate 2: [lint command]
 Gate 3: [test command]
 Gate 4: [coverage command]
 Gate 5 (smoke test): [one command that exercises the real system end-to-end, not mocks]
+
+If bash is available, save gate output to {FLOWSTATE}/metrics/sprint-N-gates.log.
+If not, copy-paste the gate output into {FLOWSTATE}/retrospectives/sprint-N.md under a "## Gate Log" section so the evidence is preserved.
 
 If any gate fails:
 - Classify each test failure as REGRESSION (test existed before this sprint) or FEATURE (new test). Compare failing test names against the baseline test list.
