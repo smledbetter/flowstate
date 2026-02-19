@@ -1,0 +1,18 @@
+{
+  "_note": "Canonical hypothesis registry. Agents and import_sprint.py use these exact IDs and names. Cap at H12 -- no new hypotheses, re-test existing.",
+  "valid_results": ["confirmed", "partially_confirmed", "inconclusive", "falsified"],
+  "hypotheses": {
+    "H1":  "3-phase sprint works across project types",
+    "H2":  "5-skill set is right for all projects",
+    "H3":  "Consensus agent works for planning",
+    "H4":  "Wave parallelism helps",
+    "H5":  "Gates catch real issues",
+    "H6":  "30-40% context budget is right",
+    "H7":  "Skills are followed by agents",
+    "H8":  "Coverage gate catches regressions",
+    "H9":  "Lint gate catches dead code",
+    "H10": "Haiku is viable for mechanical tasks",
+    "H11": "Flowstate works for greenfield projects",
+    "H12": "Skills generalize across languages"
+  }
+}

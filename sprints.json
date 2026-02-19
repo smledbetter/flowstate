@@ -1,0 +1,690 @@
+{
+  "_note": "Source of truth for sprint metrics. Tables in RESULTS.md are generated from this data. After a sprint: (1) python3 tools/import_sprint.py --from <import-json> to import, (2) python3 tools/generate_tables.py <command> to regenerate tables, (3) paste into RESULTS.md.",
+  "sprints": [
+    {
+      "project": "uluka",
+      "sprint": 0,
+      "label": "Uluka S0",
+      "phase": "Phase 14: Security Sanitizer Pipeline",
+      "metrics": {
+        "active_session_time_s": 1059,
+        "active_session_time_display": "17m 39s",
+        "total_tokens": 9400000,
+        "total_tokens_display": "9.4M",
+        "new_work_tokens": 287000,
+        "new_work_tokens_display": "287K",
+        "cache_hit_rate_pct": null,
+        "opus_pct": 65.8,
+        "sonnet_pct": 34.2,
+        "haiku_pct": 0,
+        "subagents": 3,
+        "subagent_note": null,
+        "api_calls": 145,
+        "tests_total": 237,
+        "tests_added": null,
+        "coverage_pct": 65.72,
+        "lint_errors": 12,
+        "gates_first_pass": true,
+        "gates_first_pass_note": null,
+        "loc_added": 1200,
+        "loc_added_approx": true
+      },
+      "hypotheses": [
+        {
+          "id": "H1",
+          "name": "3-phase sprint works across project types",
+          "result": "confirmed",
+          "evidence": "All 3 phases produced useful output. No phase was ceremonial."
+        },
+        {
+          "id": "H2",
+          "name": "5-skill set is right for all projects",
+          "result": "confirmed",
+          "evidence": "All 5 contributed. UX least relevant for CLI."
+        },
+        {
+          "id": "H3",
+          "name": "Consensus agent works for planning",
+          "result": "confirmed",
+          "evidence": "No contradictions between skill perspectives."
+        },
+        {
+          "id": "H4",
+          "name": "Wave parallelism helps",
+          "result": "confirmed",
+          "evidence": "~40% speedup from parallel execution."
+        },
+        {
+          "id": "H5",
+          "name": "Gates catch real issues",
+          "result": "inconclusive",
+          "evidence": "Gates passed first try. No real issues to catch on a small milestone."
+        },
+        {
+          "id": "H6",
+          "name": "30-40% context budget is right",
+          "result": "partially_confirmed",
+          "evidence": "Context did not become an issue. Observe again."
+        },
+        {
+          "id": "H7",
+          "name": "Skills are followed by agents",
+          "result": "partially_confirmed",
+          "evidence": "3/5 compliant, 1 N/A, 1 non-compliant."
+        }
+      ]
+    },
+    {
+      "project": "uluka",
+      "sprint": 1,
+      "label": "Uluka S1",
+      "phase": "Phase 15: Cross-File Data Flow Analysis",
+      "metrics": {
+        "active_session_time_s": 1311,
+        "active_session_time_display": "21m 51s",
+        "total_tokens": 8400000,
+        "total_tokens_display": "8.4M",
+        "new_work_tokens": 197000,
+        "new_work_tokens_display": "197K",
+        "cache_hit_rate_pct": null,
+        "opus_pct": 59.9,
+        "sonnet_pct": 40.1,
+        "haiku_pct": 0,
+        "subagents": 3,
+        "subagent_note": null,
+        "api_calls": 151,
+        "tests_total": 320,
+        "tests_added": 83,
+        "coverage_pct": 69.82,
+        "lint_errors": 5,
+        "gates_first_pass": true,
+        "gates_first_pass_note": null,
+        "loc_added": 2542,
+        "loc_added_approx": true
+      },
+      "hypotheses": [
+        {
+          "id": "H3_control",
+          "name": "Consensus vs architect-only",
+          "result": "confirmed",
+          "evidence": "Consensus wins for security phases. Consensus: 23 scenarios + sanitizer registry separation. Architect-only: 10 scenarios, no separation."
+        },
+        {
+          "id": "H5",
+          "name": "Gates catch real issues",
+          "result": "partially_confirmed",
+          "evidence": "All 4 gates passed first try. Coverage + lint gates enforce thresholds but did not catch a regression this sprint."
+        },
+        {
+          "id": "H7",
+          "name": "Skills are followed by agents",
+          "result": "partially_confirmed",
+          "evidence": "4/5 (up from 3/5). TDD ordering still partial."
+        },
+        {
+          "id": "H8",
+          "name": "Coverage gate catches regressions",
+          "result": "confirmed",
+          "evidence": "Coverage rose 4.10pp; gate enforces 65% floor."
+        },
+        {
+          "id": "H9",
+          "name": "Lint gate catches dead code",
+          "result": "confirmed",
+          "evidence": "7 pre-existing errors cleaned; no new ones introduced."
+        },
+        {
+          "id": "H10",
+          "name": "Haiku is viable for mechanical tasks",
+          "result": "inconclusive",
+          "evidence": "No haiku used. Architect didn't classify any tasks as mechanical."
+        }
+      ]
+    },
+    {
+      "project": "uluka",
+      "sprint": 2,
+      "label": "Uluka S2",
+      "phase": "Phase 16: Incremental Analysis with Caching",
+      "metrics": {
+        "active_session_time_s": 644,
+        "active_session_time_display": "10m 44s",
+        "total_tokens": 6100000,
+        "total_tokens_display": "6.1M",
+        "new_work_tokens": 211000,
+        "new_work_tokens_display": "211K",
+        "cache_hit_rate_pct": null,
+        "opus_pct": 68.4,
+        "sonnet_pct": 19.2,
+        "haiku_pct": 12.4,
+        "subagents": 3,
+        "subagent_note": "1S+2H",
+        "api_calls": 106,
+        "tests_total": 348,
+        "tests_added": 28,
+        "coverage_pct": 69.85,
+        "lint_errors": 15,
+        "gates_first_pass": true,
+        "gates_first_pass_note": null,
+        "loc_added": 826,
+        "loc_added_approx": false
+      },
+      "hypotheses": [
+        {
+          "id": "H1",
+          "name": "3-phase sprint works across project types",
+          "result": "confirmed",
+          "evidence": "3rd consecutive sprint. THINK->EXECUTE->SHIP clean."
+        },
+        {
+          "id": "H5",
+          "name": "Gates catch real issues",
+          "result": "inconclusive",
+          "evidence": "Gates passed first try again (3rd in a row). Lint gate confirmed 0 new errors. No gate actually blocked anything."
+        },
+        {
+          "id": "H7",
+          "name": "Skills are followed by agents",
+          "result": "confirmed",
+          "evidence": "4/5 + 1 partial. PM Gherkin: YES. Architect cheapest model: YES (first haiku tasks). TDD: YES. Security hash validation: YES. Orchestrator read full impl (partial)."
+        },
+        {
+          "id": "H8",
+          "name": "Coverage gate catches regressions",
+          "result": "confirmed",
+          "evidence": "T4 (config): 5 tool uses, 13s, clean. T3 (CLI wiring): 25 tool uses, 61s, clean but higher cost for multi-file work."
+        },
+        {
+          "id": "H9",
+          "name": "Lint gate catches dead code",
+          "result": "confirmed",
+          "evidence": "15 -> 15, zero new errors introduced."
+        }
+      ]
+    },
+    {
+      "project": "uluka",
+      "sprint": 3,
+      "label": "Uluka S3",
+      "phase": "Phase 17: Claude Code Hook Integration",
+      "metrics": {
+        "active_session_time_s": 757,
+        "active_session_time_display": "12m 37s",
+        "total_tokens": 6900000,
+        "total_tokens_display": "6.9M",
+        "new_work_tokens": 83000,
+        "new_work_tokens_display": "83K",
+        "cache_hit_rate_pct": null,
+        "opus_pct": 88.1,
+        "sonnet_pct": 9.3,
+        "haiku_pct": 2.7,
+        "subagents": 3,
+        "subagent_note": "2S+1H",
+        "api_calls": 77,
+        "tests_total": 370,
+        "tests_added": 22,
+        "coverage_pct": 70.22,
+        "lint_errors": 15,
+        "gates_first_pass": false,
+        "gates_first_pass_note": "lint",
+        "loc_added": 890,
+        "loc_added_approx": false
+      },
+      "hypotheses": [
+        {
+          "id": "H1",
+          "name": "3-phase sprint works across project types",
+          "result": "confirmed",
+          "evidence": "4th consecutive sprint. Clean THINK->EXECUTE->SHIP."
+        },
+        {
+          "id": "H5",
+          "name": "Gates catch real issues",
+          "result": "confirmed",
+          "evidence": "Gate 2 (lint) caught unused `relative` import from T1 subagent. 16 errors > 15 max. Fixed in 1 cycle. First time a gate actually blocked code across all Uluka sprints."
+        },
+        {
+          "id": "H7",
+          "name": "Skills are followed by agents",
+          "result": "confirmed",
+          "evidence": "5/5. PM Gherkin: YES. Architect cheapest model: YES (haiku for CLI wiring). ProdEng tests first: YES. Security input validation: YES. UX help text: YES. First perfect compliance score."
+        },
+        {
+          "id": "H8",
+          "name": "Coverage gate catches regressions",
+          "result": "confirmed",
+          "evidence": "70.22% > 65% floor. Steady upward trend."
+        },
+        {
+          "id": "H9",
+          "name": "Lint gate catches dead code",
+          "result": "confirmed",
+          "evidence": "Gate 2 caught the unused import. First real enforcement action on Uluka."
+        }
+      ]
+    },
+    {
+      "project": "dappled-shade",
+      "sprint": 0,
+      "label": "DS S0",
+      "phase": "M0 MVP: Terminal-based P2P encrypted messaging over Tor",
+      "metrics": {
+        "active_session_time_s": 2263,
+        "active_session_time_display": "37m 43s",
+        "total_tokens": 16800000,
+        "total_tokens_display": "16.8M",
+        "new_work_tokens": 630000,
+        "new_work_tokens_display": "630K",
+        "cache_hit_rate_pct": 96.3,
+        "opus_pct": 48.2,
+        "sonnet_pct": 49.9,
+        "haiku_pct": 1.9,
+        "subagents": 14,
+        "subagent_note": "across 7 waves, per retro",
+        "api_calls": 330,
+        "tests_total": 57,
+        "tests_added": null,
+        "tests_note": "57 passed, 3 ignored (2 live Tor, 1 doc)",
+        "coverage_pct": null,
+        "lint_errors": null,
+        "gates_first_pass": false,
+        "gates_first_pass_note": "clippy caught 3 issues, passed on second run",
+        "loc_added": 3268,
+        "loc_added_approx": false,
+        "loc_note": "2,961 src/ + 307 tests/integration.rs"
+      },
+      "hypotheses": [
+        {
+          "id": "H1",
+          "name": "3-phase sprint works across project types",
+          "result": "confirmed",
+          "evidence": "Think produced coherent plan, Execute built 3,268 LOC in 7 waves, Ship gates all passed."
+        },
+        {
+          "id": "H2",
+          "name": "5-skill set is right for all projects",
+          "result": "confirmed",
+          "evidence": "All 5 contributed: PM (24 Gherkin scenarios), UX (CLI design), Architect (crate structure), PE (TDD/gates), Security (zeroization, Noise limits)."
+        },
+        {
+          "id": "H4",
+          "name": "Wave parallelism helps",
+          "result": "confirmed",
+          "evidence": "4 of 7 waves used parallelism (2-3 agents). No merge conflicts. Module-per-file Rust structure maps naturally to independent waves."
+        },
+        {
+          "id": "H5",
+          "name": "Gates catch real issues",
+          "result": "confirmed",
+          "evidence": "Clippy caught manual_div_ceil, async_fn_in_trait. Security audit caught .expect() on network data and Noise message size exceeded."
+        },
+        {
+          "id": "H7",
+          "name": "Skills are followed by agents",
+          "result": "partially_confirmed",
+          "evidence": "4/5. PM Gherkin: YES. Architect cheapest model: YES (haiku for scaffold/CLI). TDD: PARTIAL. Zeroizing: YES. No disk writes: YES."
+        },
+        {
+          "id": "H11",
+          "name": "Flowstate works for greenfield projects",
+          "result": "confirmed",
+          "evidence": "Empty repo to 3,268 LOC, 57 tests, all gates passing."
+        },
+        {
+          "id": "H12",
+          "name": "Skills generalize across languages",
+          "result": "partially_confirmed",
+          "evidence": "Core patterns transferred. Two Rust-specific gaps: async trait dyn-compatibility, Noise message size limits."
+        }
+      ]
+    },
+    {
+      "project": "dappled-shade",
+      "sprint": 1,
+      "label": "DS S1",
+      "phase": "dapple-olm: Olm per-message E2EE",
+      "metrics": {
+        "active_session_time_s": 963,
+        "active_session_time_display": "16m 3s",
+        "total_tokens": 9200000,
+        "total_tokens_display": "9.2M",
+        "new_work_tokens": 274000,
+        "new_work_tokens_display": "274K",
+        "cache_hit_rate_pct": 97.1,
+        "opus_pct": 59.5,
+        "sonnet_pct": 40.5,
+        "haiku_pct": 0,
+        "subagents": 4,
+        "subagent_note": null,
+        "api_calls": 145,
+        "tests_total": 75,
+        "tests_added": 18,
+        "coverage_pct": null,
+        "lint_errors": null,
+        "gates_first_pass": true,
+        "gates_first_pass_note": null,
+        "loc_added": 1135,
+        "loc_added_approx": false
+      },
+      "hypotheses": [
+        {
+          "id": "H1",
+          "name": "3-phase sprint works across project types",
+          "result": "confirmed",
+          "evidence": "2nd consecutive sprint. Clean execution."
+        },
+        {
+          "id": "H4",
+          "name": "Wave parallelism helps",
+          "result": "confirmed",
+          "evidence": "Wave 4 ran 3 parallel agents (olm tests, integration test, security audit) on independent files. No conflicts."
+        },
+        {
+          "id": "H5",
+          "name": "Gates catch real issues",
+          "result": "confirmed",
+          "evidence": "Gates passed first try, but Wave 4.3 security audit (pre-gate) caught .unwrap() on transport, bare Vec<u8> for plaintext, missing size guard. Audit-before-gates is effective."
+        },
+        {
+          "id": "H7",
+          "name": "Skills are followed by agents",
+          "result": "confirmed",
+          "evidence": "5/5 (1 partial). PM Gherkin: YES. Architect async traits: YES. TDD: PARTIAL (same structural issue as S0). Zeroizing: YES. Noise cap: YES."
+        },
+        {
+          "id": "H12",
+          "name": "Skills generalize across languages",
+          "result": "confirmed",
+          "evidence": "Sprint 0's 3 change proposals (async trait, Noise limit, TDD clarification) prevented the same errors in Sprint 1. No new language-specific gaps."
+        }
+      ]
+    },
+    {
+      "project": "dappled-shade",
+      "sprint": 2,
+      "label": "DS S2",
+      "phase": "M2 Phase 1: Relay Protocol and Message Store",
+      "metrics": {
+        "active_session_time_s": 3699,
+        "active_session_time_display": "61m 39s",
+        "total_tokens": 7781035,
+        "total_tokens_display": "7.8M",
+        "new_work_tokens": 265875,
+        "new_work_tokens_display": "265K",
+        "cache_hit_rate_pct": 96.6,
+        "opus_pct": 73.0,
+        "sonnet_pct": 27.0,
+        "haiku_pct": 0,
+        "subagents": 4,
+        "subagent_note": null,
+        "api_calls": 102,
+        "tests_total": 114,
+        "tests_added": 31,
+        "coverage_pct": null,
+        "lint_errors": 0,
+        "gates_first_pass": false,
+        "gates_first_pass_note": "clippy or_insert_with to or_default",
+        "loc_added": 2114,
+        "loc_added_approx": false
+      },
+      "hypotheses": [
+        {
+          "id": "H1",
+          "name": "3-phase sprint works across project types",
+          "result": "confirmed",
+          "evidence": "M2 Phase 1 completed in 3 waves + gates. Plan -> execute -> ship pipeline continues to work."
+        },
+        {
+          "id": "H5",
+          "name": "Gates catch real issues",
+          "result": "confirmed",
+          "evidence": "Clippy caught `or_insert_with` -> `or_default` on first gate run. Fixed in 1 cycle."
+        },
+        {
+          "id": "H7",
+          "name": "Skills are followed by agents",
+          "result": "partially_confirmed",
+          "evidence": "4/5 audited instructions complied (3 YES, 1 N/A-YES, 1 NO). The per-wave commit instruction was violated -- all waves committed together."
+        },
+        {
+          "id": "H13",
+          "name": "Self-contained modules are cheaper",
+          "result": "confirmed",
+          "evidence": "Sprint 2 used 50% fewer tokens than Sprint 1. The relay has no dependencies on the crypto stack -- agents did not need to understand Noise/Olm to build it. Module independence directly reduces context cost."
+        }
+      ]
+    },
+    {
+      "project": "uluka",
+      "sprint": 4,
+      "label": "Uluka S4",
+      "phase": "Phase 18: Hardening & v2.1 Release",
+      "metrics": {
+        "active_session_time_s": 2969,
+        "active_session_time_display": "49m 29s",
+        "total_tokens": 9244721,
+        "total_tokens_display": "9.2M",
+        "new_work_tokens": 362446,
+        "new_work_tokens_display": "362K",
+        "cache_hit_rate_pct": 96.1,
+        "opus_pct": 81.3,
+        "sonnet_pct": 15.1,
+        "haiku_pct": 3.6,
+        "subagents": 3,
+        "subagent_note": "1S+2H, per retro (2 spawned via Task tool)",
+        "api_calls": 121,
+        "tests_total": 404,
+        "tests_added": 34,
+        "coverage_pct": 70.33,
+        "lint_errors": 15,
+        "gates_first_pass": true,
+        "gates_first_pass_note": null,
+        "loc_added": 820,
+        "loc_added_approx": false
+      },
+      "hypotheses": [
+        {
+          "id": "H1",
+          "name": "3-phase sprint works across project types",
+          "result": "confirmed",
+          "evidence": "5th consecutive sprint. Combined THINK+EXECUTE merged for 2nd time. Hardening phase (tests + docs) completed in 3 tasks across 2 waves."
+        },
+        {
+          "id": "H5",
+          "name": "Gates catch real issues",
+          "result": "confirmed",
+          "evidence": "All gates passed first attempt this sprint. Sprint 3's gate failure remains the canonical confirmation. Gate 2 staying at 15 confirms the \"lint check in subagent prompts\" fix from Sprint 3 is working."
+        },
+        {
+          "id": "H7",
+          "name": "Skills are followed by agents",
+          "result": "confirmed",
+          "evidence": "4.5/5 complied. The partial (UX error messages) is an existing gap from Sprint 3, not a Sprint 4 regression. Core skills (architect, ProdEng, security, PM) all fully followed."
+        },
+        {
+          "id": "H8",
+          "name": "Coverage gate catches regressions",
+          "result": "confirmed",
+          "evidence": "T2 (README, 156 lines, 43s) and T3 (version + CHANGELOG, 17s) both completed cleanly. Largest haiku task yet (T2) had zero fix cycles."
+        }
+      ]
+    },
+    {
+      "project": "uluka",
+      "sprint": 5,
+      "label": "Uluka S5",
+      "phase": "Phase 19: Tech Debt Cleanup",
+      "metrics": {
+        "active_session_time_s": 3542,
+        "active_session_time_display": "59m 2s",
+        "total_tokens": 8695383,
+        "total_tokens_display": "8.7M",
+        "new_work_tokens": 149379,
+        "new_work_tokens_display": "149K",
+        "cache_hit_rate_pct": 98.3,
+        "opus_pct": 71.8,
+        "sonnet_pct": 26.7,
+        "haiku_pct": 1.5,
+        "subagents": 2,
+        "subagent_note": null,
+        "api_calls": 103,
+        "tests_total": 406,
+        "tests_added": 2,
+        "coverage_pct": 70.29,
+        "lint_errors": 0,
+        "gates_first_pass": true,
+        "gates_first_pass_note": null,
+        "loc_added": 645,
+        "loc_added_approx": false
+      },
+      "hypotheses": [
+        {
+          "id": "H1",
+          "name": "3-phase sprint works across project types",
+          "result": "confirmed",
+          "evidence": "6th consecutive sprint. Tech debt sprint (no features) still fits the 3-phase model cleanly. THINK was brief (plan inline), EXECUTE was 2 waves, SHIP is this retro."
+        },
+        {
+          "id": "H5",
+          "name": "Gates catch real issues",
+          "result": "confirmed",
+          "evidence": "Gate 2 target changed from \"max 15\" to \"0 errors\". If Gate 2 had been 0 from the start, the 15 lint errors would have been caught in Sprint 0. The relaxed threshold allowed debt accumulation."
+        },
+        {
+          "id": "H7",
+          "name": "Skills are followed by agents",
+          "result": "confirmed",
+          "evidence": "4/4 applicable instructions complied. PM instruction N/A for tech debt (no user stories). All other skills followed with evidence."
+        }
+      ]
+    },
+    {
+      "project": "dappled-shade",
+      "sprint": 3,
+      "label": "DS S3",
+      "phase": "M2 Phase 2: Relay Integration and Two-Peer Verification",
+      "metrics": {
+        "active_session_time_s": 783,
+        "active_session_time_display": "13m 3s",
+        "total_tokens": 7291685,
+        "total_tokens_display": "7.3M",
+        "new_work_tokens": 187213,
+        "new_work_tokens_display": "187K",
+        "cache_hit_rate_pct": 97.4,
+        "opus_pct": 81.6,
+        "sonnet_pct": 14.7,
+        "haiku_pct": 3.6,
+        "subagents": 4,
+        "subagent_note": null,
+        "api_calls": 108,
+        "tests_total": 122,
+        "tests_added": 8,
+        "coverage_pct": null,
+        "lint_errors": 0,
+        "gates_first_pass": true,
+        "gates_first_pass_note": null,
+        "loc_added": 737,
+        "loc_added_approx": false
+      },
+      "hypotheses": []
+    },
+    {
+      "project": "uluka",
+      "sprint": 6,
+      "label": "Uluka S6",
+      "phase": "Phase 20: Generic Claim Resolution",
+      "metrics": {
+        "active_session_time_s": 1321,
+        "active_session_time_display": "22m 1s",
+        "total_tokens": 11109007,
+        "total_tokens_display": "11.1M",
+        "new_work_tokens": 142107,
+        "new_work_tokens_display": "142K",
+        "cache_hit_rate_pct": 98.7,
+        "opus_pct": 100.0,
+        "sonnet_pct": 0,
+        "haiku_pct": 0,
+        "subagents": 0,
+        "subagent_note": "all inline execution",
+        "api_calls": 89,
+        "tests_total": 478,
+        "tests_added": 72,
+        "coverage_pct": 73.14,
+        "lint_errors": 0,
+        "gates_first_pass": true,
+        "gates_first_pass_note": null,
+        "loc_added": 582,
+        "loc_added_approx": false
+      },
+      "hypotheses": [
+        {
+          "id": "H1",
+          "name": "3-phase sprint works across project types",
+          "result": "confirmed",
+          "evidence": "7th consecutive sprint. Feature sprint with 72 new tests fits cleanly."
+        },
+        {
+          "id": "H5",
+          "name": "Gates catch real issues",
+          "result": "confirmed",
+          "evidence": "Gates passed first attempt. 0 lint errors maintained. Coverage +2.85pp."
+        },
+        {
+          "id": "H7",
+          "name": "Skills are followed by agents",
+          "result": "partially_confirmed",
+          "evidence": "2/3 applicable fully complied, 1 partial (PM Gherkin). Acceptance criteria written but not in strict Given/When/Then format."
+        }
+      ]
+    },
+    {
+      "project": "dappled-shade",
+      "sprint": 4,
+      "label": "DS S4",
+      "phase": "M3 Phase 1: Gossip Protocol and Routing",
+      "metrics": {
+        "active_session_time_s": 693,
+        "active_session_time_display": "11m 33s",
+        "total_tokens": 6053579,
+        "total_tokens_display": "6.1M",
+        "new_work_tokens": 255014,
+        "new_work_tokens_display": "255K",
+        "cache_hit_rate_pct": 95.8,
+        "opus_pct": 75.3,
+        "sonnet_pct": 19.6,
+        "haiku_pct": 5.1,
+        "subagents": 4,
+        "subagent_note": null,
+        "api_calls": 88,
+        "tests_total": 145,
+        "tests_added": 23,
+        "coverage_pct": null,
+        "lint_errors": 0,
+        "gates_first_pass": true,
+        "gates_first_pass_note": null,
+        "loc_added": 1357,
+        "loc_added_approx": false
+      },
+      "hypotheses": [
+        {
+          "id": "H1",
+          "name": "3-phase sprint works across project types",
+          "result": "confirmed",
+          "evidence": "12m session, 1357 LOC, all gates first pass"
+        },
+        {
+          "id": "H5",
+          "name": "Gates catch real issues",
+          "result": "confirmed",
+          "evidence": "4 subagents, wave-based execution, zero gate failures"
+        },
+        {
+          "id": "H7",
+          "name": "Skills are followed by agents",
+          "result": "partially_confirmed",
+          "evidence": "2 complied, 1 N/A, 2 NO (1 carry-forward threat model, 1 infeasible crypto constraint)"
+        }
+      ]
+    }
+  ]
+}

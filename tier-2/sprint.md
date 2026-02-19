@@ -2,6 +2,10 @@
 
 > Tier 2 sprint: skills + structure, no automated metrics collection.
 > The retro produces a sanitized export you can bring back to the Flowstate repo.
+> Set `{FLOWSTATE}` = `~/.flowstate/{project-slug}` (e.g., `~/.flowstate/my-project`).
+> Skills live at `.claude/skills/` in the project repo (gitignored). Everything else is in `{FLOWSTATE}/`.
+> **Start each sprint in a FRESH session.** One sprint = one session.
+> Multi-sprint sessions degrade metric accuracy. If you must continue in an existing session, note it in the retro.
 
 One-line description of what this sprint builds.
 
@@ -16,10 +20,20 @@ You are running a Flowstate sprint.
 
 Read these files:
 - All skill files in .claude/skills/
+- docs/ROADMAP.md (this sprint's phase)
+- [{FLOWSTATE}/progress.md] (if exists -- operational state from last session)
 - [project config / requirements -- adapt this list to your project]
 
 PHASE 1 -- THINK:
 Acting as a consensus agent with all 5 skill perspectives (PM, UX, Architect, Production Engineer, Security Auditor):
+
+0. FEASIBILITY CHECK (do this BEFORE planning):
+   - List every new external dependency this sprint requires (libraries, APIs, services)
+   - For each: verify it exists in the registry, check version compatibility, confirm the API you need is available
+   - Identify the single highest-risk technical task. Run a minimal spike (import, compile, call the API) to confirm it works
+   - If any dependency is unverified or experimental, FLAG IT NOW with a fallback plan
+   - If the spike fails, revise the scope before proceeding
+   - Confirm a formatter AND linter are configured as gates. If either is missing, set one up now before writing any code.
 
 1. Produce acceptance criteria (Gherkin format) for this sprint's scope:
    [describe requirements here]
@@ -43,8 +57,11 @@ Gate 1: [type check command]
 Gate 2: [lint command]
 Gate 3: [test command]
 Gate 4: [coverage command]
+Gate 5 (smoke test): [one command that exercises the real system end-to-end, not mocks]
 
-If any gate fails: fix the issue, re-run that gate, max 3 cycles.
+If any gate fails:
+- Classify each test failure as REGRESSION (test existed before this sprint) or FEATURE (new test). Compare failing test names against the baseline test list.
+- Fix the issue, re-run that gate, max 3 cycles.
 
 When all gates pass, say: "Ready for Phase 3: SHIP whenever you want to proceed."
 ```
@@ -56,32 +73,73 @@ Copy-paste this prompt after gates pass:
 ```
 Run the retrospective for this sprint.
 
-1. Write a full retrospective (keep this local, do not share outside this environment):
+1. Write {FLOWSTATE}/retrospectives/sprint-N.md (full retrospective, stays local):
    - What was built (deliverables, test count, files changed)
    - What worked, with evidence
    - What failed, with evidence
-   - Change proposals as diffs (if any)
+   - Change proposals as diffs (if any). Must have at least one `- Before` / `+ After` block or explain why no changes are needed with evidence.
+   - When proposing skill changes, prefer REMOVING or SIMPLIFYING instructions over adding new ones. Each added instruction reduces compliance with all others. Justify any addition by explaining why it's worth the cost.
 
 2. H7 audit: check these 5 skill instructions for compliance:
    [list your 5 pre-selected instructions here]
 
-3. Now produce a SANITIZED EXPORT for process improvement. This will leave this environment, so it must contain NO proprietary code, architecture details, file paths, business logic, or project-specific content. Only include:
+3. Hypothesis results table:
+   | # | Hypothesis | Result | Evidence |
+   Include at minimum: H1, H5, H7
+
+4. Now produce a SANITIZED EXPORT for process improvement. This will leave this environment, so it must contain NO proprietary code, architecture details, file paths, business logic, or project-specific content. Only include:
    - Sprint number, language/framework, generalized scope description
    - Metrics: estimate your active session time, count subagents spawned, count tests added, gate pass/fail
+   - Task type: feature, bugfix, refactor, infra, planning, or hardening
    - Hypothesis results: H1 (3-phase worked?), H5 (gates caught issues?), H7 (X/5 compliance)
    - Skill change proposals GENERALIZED: strip project-specific details, describe the pattern not the implementation
    - Process observations: did the single prompt work? friction points? what would you change?
 
 Format the sanitized export as a markdown document starting with "# Flowstate Sanitized Sprint Export".
 
-4. Apply any skill changes and commit:
+5. Do NOT apply skill changes -- proposals stay in the retro for human review.
+   Commit the sprint's code work:
    git add -A && git commit -m "sprint N: [generalized description]"
+
+6. Write the next sprint's baseline at {FLOWSTATE}/metrics/baseline-sprint-{N+1}.md:
+   - Current git SHA
+   - Test count, coverage %, lint error count
+   - Gate commands and their current status (run each gate, record pass/fail)
+   - 5 H7 instructions to audit next sprint (pick from .claude/skills/, rotate from last sprint)
+
+7. Update docs/ROADMAP.md:
+   - Mark this sprint's phase as done (strikethrough or checkmark)
+   - Update the "Current State" section with new test count, LOC, milestone status
+
+8. Write progress file at {FLOWSTATE}/progress.md:
+   - What was completed this sprint (list of deliverables)
+   - What failed or was deferred (and why)
+   - What the next session should do first
+   - Any blocked items or external dependencies awaiting resolution
+   - Current gate status (all passing? which ones?)
+   This file is operational state for the next agent session, not analysis.
+   Overwrite any previous progress.md — it is always "current state."
+
+9. COMPLETION CHECK — before declaring done, verify ALL of these exist:
+   [ ] {FLOWSTATE}/retrospectives/sprint-N.md contains:
+       - Hypothesis results table with columns: # | Hypothesis | Result | Evidence
+       - At least H1, H5, H7 rows
+       - At least one change proposal with - Before / + After diff (or explicit "no changes needed" with evidence)
+   [ ] Sanitized export produced (starting with "# Flowstate Sanitized Sprint Export")
+   [ ] {FLOWSTATE}/metrics/baseline-sprint-{N+1}.md with SHA, tests, coverage, gates, 5 H7 instructions
+   [ ] {FLOWSTATE}/progress.md written (current state for next session)
+   [ ] docs/ROADMAP.md updated (phase marked done, Current State refreshed)
+   [ ] Sprint code committed
+
+   Print this checklist with [x] or [MISSING] for each item.
+   If anything is MISSING, fix it before proceeding.
 ```
 
 ---
 
 ## After the Sprint
 
-1. Review the full retrospective (stays on this machine)
-2. Review the sanitized export -- redact anything you are not comfortable sharing
-3. Copy the sanitized export to your Flowstate repo: `imports/[codename]-sprint-N.md`
+1. Review the retrospective at {FLOWSTATE}/retrospectives/sprint-N.md
+2. Approve or reject each change proposal -- apply approved changes to .claude/skills/ and commit
+3. Review the sanitized export -- redact anything you are not comfortable sharing
+4. Copy the sanitized export to your Flowstate repo: `imports/[codename]-sprint-N.md`

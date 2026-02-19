@@ -1,6 +1,11 @@
 # Sprint N: [Project] — [Milestone/Phase Name]
 
 > Tier 1 sprint: full Claude Code with bash, automated metrics.
+> Set `{FLOWSTATE}` = `~/.flowstate/{project-slug}` (e.g., `~/.flowstate/uluka`).
+> Skills live at `.claude/skills/` in the project repo (gitignored). Everything else is in `{FLOWSTATE}/`.
+> **Start each sprint in a FRESH session.** One sprint = one session.
+> Multi-sprint sessions degrade metric accuracy (active time, token counts blend across sprints).
+> If you must continue in an existing session, note it in the retro.
 
 One-line description of what this sprint builds.
 
@@ -15,14 +20,25 @@ You are running a Flowstate sprint for [PROJECT] [MILESTONE/PHASE].
 
 Read these files:
 - PRD.md (or README)
-- [roadmap / requirements files]
-- [metrics/baseline-sprint-N.md] (current state: tests, coverage, lint)
-- flowstate.config.md (quality gates)
-- [retrospectives/sprint-{N-1}.md] (last retro, if exists)
+- docs/ROADMAP.md (this sprint's phase)
+- [{FLOWSTATE}/metrics/baseline-sprint-N.md] (current state: tests, coverage, lint)
+- [{FLOWSTATE}/progress.md] (if exists — operational state from last session)
+- {FLOWSTATE}/flowstate.config.md (quality gates)
+- [{FLOWSTATE}/retrospectives/sprint-{N-1}.md] (last retro, if exists)
 - All skill files in .claude/skills/
+
+If a previous sprint's PR was reviewed by CodeRabbit, read the review comments before planning.
 
 PHASE 1 — THINK:
 Acting as a consensus agent with all 5 skill perspectives (PM, UX, Architect, Production Engineer, Security Auditor):
+
+0. FEASIBILITY CHECK (do this BEFORE planning):
+   - List every new external dependency this sprint requires (libraries, APIs, services)
+   - For each: verify it exists in the registry, check version compatibility, confirm the API you need is available
+   - Identify the single highest-risk technical task. Run a minimal spike (import, compile, call the API) to confirm it works
+   - If any dependency is unverified or experimental, FLAG IT NOW with a fallback plan
+   - If the spike fails, revise the scope before proceeding
+   - Confirm a formatter AND linter are configured as gates in flowstate.config.md. If either is missing, set one up now before writing any code.
 
 1. Produce acceptance criteria (Gherkin format) for this sprint's scope:
    [describe requirements here]
@@ -45,10 +61,16 @@ Gate 1: [type check / build command]
 Gate 2: [lint command]
 Gate 3: [test command]
 Gate 4: [coverage command]
+Gate 5 (smoke test): [one command that exercises the real system end-to-end, not mocks]
+Gate 6 (optional): bash ~/Sites/Flowstate/tools/deps_check.sh    (verify new deps exist in registry)
+Gate 7 (optional): bash ~/Sites/Flowstate/tools/sast_check.sh    (static security analysis)
+Gate 8 (optional): bash ~/Sites/Flowstate/tools/deadcode_check.sh (detect unused exports/deps)
 
-Save gate output to metrics/sprint-N-gates.log.
+Save gate output to {FLOWSTATE}/metrics/sprint-N-gates.log.
 
-If any gate fails: fix the issue, re-run that gate, max 3 cycles. If still failing after 3 cycles, stop and report.
+If any gate fails:
+- Classify each test failure as REGRESSION (test existed before this sprint) or FEATURE (new test). Compare failing test names against the baseline test list.
+- Fix the issue, re-run that gate, max 3 cycles. If still failing after 3 cycles, stop and report.
 
 When all gates pass, say: "Ready for Phase 3: SHIP whenever you want to proceed."
 ```
@@ -60,11 +82,59 @@ Copy-paste this prompt after gates pass:
 ```
 Run the Phase 3 retrospective for Sprint N.
 
-1. Collect metrics by running: bash metrics/collect.sh <SESSION_ID>
-   The session ID is from your current session.
-   Save output to metrics/sprint-N-report.txt.
+1. Collect metrics:
+   a. Find the boundary timestamp — the last commit BEFORE this sprint's work:
+        git log --format='%aI %s' | head -5
+      Use that timestamp as BOUNDARY.
+   b. ALWAYS use --after to isolate this sprint's metrics:
+      bash {FLOWSTATE}/metrics/collect.sh --after <BOUNDARY> <SESSION_ID>
+      Run this FROM the project directory. Save to {FLOWSTATE}/metrics/sprint-N-report.txt
+   c. JSON report (same --after flag):
+      bash {FLOWSTATE}/metrics/collect.sh --json --after <BOUNDARY> <SESSION_ID>
+      Save to {FLOWSTATE}/metrics/sprint-N-report.json
 
-2. Write retrospectives/sprint-N.md with:
+2. Write import JSON at {FLOWSTATE}/metrics/sprint-N-import.json:
+   - Start from the JSON report (sprint-N-report.json) as the base
+   - Add these fields:
+     ```json
+     {
+       "project": "{project-slug}",
+       "sprint": N,
+       "label": "Sprint N: [phase description]",
+       "phase": "[phase name from roadmap]",
+       "metrics": {
+         "...everything from sprint-N-report.json...",
+         "tests_total": "<current test count>",
+         "tests_added": "<tests added this sprint>",
+         "coverage_pct": "<current coverage %>",
+         "lint_errors": 0,
+         "gates_first_pass": "<true|false>",
+         "gates_first_pass_note": "<note if false, empty string if true>",
+         "loc_added": "<LOC from git diff --stat>",
+         "loc_added_approx": false,
+         "task_type": "<feature|bugfix|refactor|infra|planning|hardening>",
+         "rework_rate": "<from sprint-N-report.json, or null if not available>",
+         "judge_score": "<[scope, test_quality, gate_integrity, convention, diff_hygiene] 1-5 each, from Stop hook output, or null>",
+         "judge_blocked": "<true if LLM judge prevented stopping, false otherwise, or null>",
+         "judge_block_reason": "<reason string if blocked, or null>",
+         "coderabbit_issues": "<number of CodeRabbit issues on PR, or null if no PR>",
+         "coderabbit_issues_valid": "<number human agreed were real, or null>",
+         "mutation_score_pct": "<mutation score % if run, or null>"
+       },
+       "hypotheses": [
+         // Use IDs and names from hypotheses.json in the Flowstate repo.
+         // Valid results: confirmed, partially_confirmed, inconclusive, falsified
+         {"id": "H1", "name": "<from hypotheses.json>", "result": "...", "evidence": "..."},
+         {"id": "H5", "name": "<from hypotheses.json>", "result": "...", "evidence": "..."},
+         {"id": "H7", "name": "<from hypotheses.json>", "result": "...", "evidence": "..."}
+       ]
+     }
+     ```
+   - The schema matches sprints.json entries exactly — same field names, same types
+   - Validate: `python3 ~/Sites/Flowstate/tools/import_sprint.py --from --dry-run {FLOWSTATE}/metrics/sprint-N-import.json`
+   - Fix any errors before proceeding. Warnings (auto-corrections) are ok.
+
+3. Write {FLOWSTATE}/retrospectives/sprint-N.md with:
    - What was built (deliverables, test count, files changed, LOC)
    - Metrics comparison vs previous sprint (see baseline)
    - What worked, with evidence
@@ -72,23 +142,64 @@ Run the Phase 3 retrospective for Sprint N.
    - H7 audit: check these 5 skill instructions for compliance:
      [list 5 pre-selected instructions from baseline]
 
-3. Hypothesis results table:
+4. Hypothesis results table:
    | # | Hypothesis | Result | Evidence |
    Include at minimum: H1, H5, H7
 
-4. Change proposals as diffs (if any). Must have at least one `- Before` / `+ After` block or explain why no changes are needed with evidence.
+5. Change proposals as diffs (if any). Must have at least one `- Before` / `+ After` block or explain why no changes are needed with evidence.
+   When proposing skill changes, prefer REMOVING or SIMPLIFYING instructions over adding new ones. Each added instruction reduces compliance with all others. Justify any addition by explaining why it's worth the cost.
 
-5. Apply any approved skill changes and commit everything:
+6. Do NOT apply skill changes — proposals stay in the retro for human review.
+   Commit the sprint's code work:
    git add -A && git commit -m "sprint N: [description]"
+
+7. Write the next sprint's baseline at {FLOWSTATE}/metrics/baseline-sprint-{N+1}.md:
+   - Current git SHA
+   - Test count, coverage %, lint error count
+   - Gate commands and their current status (run each gate, record pass/fail)
+   - 5 H7 instructions to audit next sprint (pick from .claude/skills/, rotate from last sprint)
+
+8. Update docs/ROADMAP.md:
+   - Mark this sprint's phase as done (strikethrough or checkmark)
+   - Update the "Current State" section with new test count, LOC, milestone status
+
+9. Write progress file at {FLOWSTATE}/progress.md:
+   - What was completed this sprint (list of deliverables)
+   - What failed or was deferred (and why)
+   - What the next session should do first
+   - Any blocked items or external dependencies awaiting resolution
+   - Current gate status (all passing? which ones?)
+   This file is operational state for the next agent session, not analysis.
+   Overwrite any previous progress.md — it is always "current state."
+
+10. COMPLETION CHECK — before declaring done, verify ALL of these exist:
+   [ ] {FLOWSTATE}/metrics/sprint-N-report.txt
+   [ ] {FLOWSTATE}/metrics/sprint-N-report.json
+   [ ] {FLOWSTATE}/metrics/sprint-N-import.json (complete import-ready JSON)
+   [ ] {FLOWSTATE}/retrospectives/sprint-N.md contains:
+       - Hypothesis results table with columns: # | Hypothesis | Result | Evidence
+       - At least H1, H5, H7 rows
+       - At least one change proposal with - Before / + After diff (or explicit "no changes needed" with evidence)
+   [ ] {FLOWSTATE}/metrics/baseline-sprint-{N+1}.md with SHA, tests, coverage, gates, 5 H7 instructions
+   [ ] {FLOWSTATE}/progress.md written (current state for next session)
+   [ ] docs/ROADMAP.md updated (phase marked done, Current State refreshed)
+   [ ] Sprint code committed
+
+   Print this checklist with [x] or [MISSING] for each item.
+   If anything is MISSING, fix it before proceeding.
 ```
 
 ---
 
 ## Post-Sprint
 
-1. Review the retrospective and approve/reject each change proposal
-2. Copy metrics/sprint-N-report.txt to Flowstate repo for RESULTS.md update
-3. Write the next sprint's baseline: metrics/baseline-sprint-{N+1}.md
+1. Review the retrospective at {FLOWSTATE}/retrospectives/sprint-N.md
+2. Approve or reject each change proposal — apply approved changes to .claude/skills/ and commit
+3. Validate import: `python3 tools/import_sprint.py --from --dry-run {FLOWSTATE}/metrics/sprint-N-import.json`
+4. Import metrics: `python3 tools/import_sprint.py --from {FLOWSTATE}/metrics/sprint-N-import.json`
+   (Fallback interactive mode: `python3 tools/import_sprint.py {project} {N}`)
+5. Run pipeline tests: `python3 tools/test_pipeline.py` (verifies collect.sh, import validation, and table generation)
+6. Optional: run mutation testing as a diagnostic: `bash ~/Sites/Flowstate/tools/mutation_check.sh` (expensive — not every sprint)
 
 ### Human Time
 

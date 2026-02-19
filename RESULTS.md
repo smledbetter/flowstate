@@ -338,15 +338,16 @@ Sprint 1 built Phase 15 (Cross-File Data Flow Analysis) with all 4 quality gates
 
 **Metrics**:
 
+<!-- generated-from: python3 tools/generate_tables.py compare uluka 0 1 -->
 | Metric | Sprint 0 | Sprint 1 | Delta |
 |--------|----------|----------|-------|
-| Active session time | 17m 29s | 25m 16s | +7m 47s (larger milestone) |
-| Total tokens | 14.4M | 13.6M | -0.8M |
-| Opus % | 63.9% | 61.7% | -2.2pp |
-| Sonnet % | 36.1% | 38.3% | +2.2pp |
+| Active session time | 17m 39s | 21m 51s | +4m 12s (larger milestone) |
+| Total tokens | 9.4M | 8.4M | -1.0M |
+| Opus % (tokens) | 65.8% | 59.9% | -5.9pp |
+| Sonnet % (tokens) | 34.2% | 40.1% | +5.9pp |
 | Haiku % | 0% | 0% | — |
-| Subagents | 4 | 4 | — |
-| API calls | 242 | 245 | — |
+| Subagents | 3 | 3 | — |
+| API calls | 145 | 151 | — |
 | Tests | 237 | 320 (+83) | +35% |
 | Coverage | 65.72% | 69.82% | +4.10pp |
 | Lint errors | 12 | 5 | -7 cleaned |
@@ -354,6 +355,7 @@ Sprint 1 built Phase 15 (Cross-File Data Flow Analysis) with all 4 quality gates
 
 **Hypothesis results**:
 
+<!-- generated-from: python3 tools/generate_tables.py hypotheses uluka 1 -->
 | # | Hypothesis | Result | Evidence |
 |---|-----------|--------|----------|
 | H3 control | Consensus vs architect-only | Consensus wins for security phases | Consensus: 23 scenarios + sanitizer registry separation. Architect-only: 10 scenarios, no separation |
@@ -371,16 +373,17 @@ Sprint 2 built Phase 16 (Incremental Analysis with Caching) — SHA-256 content-
 
 **Metrics**:
 
-| Metric | Sprint 0 | Sprint 1 | Sprint 2 | Delta (S1→S2) |
+<!-- generated-from: python3 tools/generate_tables.py compare uluka 0 1 2 -->
+| Metric | Sprint 0 | Sprint 1 | Sprint 2 | Delta (S1->S2) |
 |--------|----------|----------|----------|---------------|
-| Active session time | 17m 29s | 25m 16s | 16m 56s | -8m 20s (smaller phase) |
-| Total tokens | 14.4M | 13.6M | 9.8M | -3.8M |
-| New-work tokens | — | 1.45M | 309K | -79% |
-| Opus % | 63.9% | 61.7% | 65.7% | +4.0pp |
-| Sonnet % | 36.1% | 38.3% | 18.7% | -19.6pp |
-| Haiku % | 0% | 0% | 15.6% | +15.6pp (first haiku) |
-| Subagents | 4 | 4 | 4 (2 sonnet + 2 haiku) | First haiku agents |
-| API calls | 242 | 245 | 178 | -27% |
+| Active session time | 17m 39s | 21m 51s | 10m 44s | -11m 7s (smaller phase) |
+| Total tokens | 9.4M | 8.4M | 6.1M | -2.3M |
+| New-work tokens | 287K | 197K | 211K | +7% |
+| Opus % (tokens) | 65.8% | 59.9% | 68.4% | +8.5pp |
+| Sonnet % (tokens) | 34.2% | 40.1% | 19.2% | -20.9pp |
+| Haiku % (tokens) | 0% | 0% | 12.4% | +12.4pp (first haiku) |
+| Subagents | 3 | 3 | 3 (1S+2H) | First haiku agents |
+| API calls | 145 | 151 | 106 | -30% |
 | Tests | 237 | 320 (+83) | 348 (+28) | — |
 | Coverage | 65.72% | 69.82% | 69.85% (+0.03pp) | Minimal (I/O-heavy code) |
 | Lint errors | 12 | 15 | 15 (0 new) | Stable |
@@ -389,6 +392,7 @@ Sprint 2 built Phase 16 (Incremental Analysis with Caching) — SHA-256 content-
 
 **Hypothesis results**:
 
+<!-- generated-from: python3 tools/generate_tables.py hypotheses uluka 2 -->
 | # | Hypothesis | Result | Evidence |
 |---|-----------|--------|----------|
 | H1 | 3-phase works for CLI | Confirmed | 3rd consecutive sprint. THINK→EXECUTE→SHIP clean. |
@@ -399,7 +403,49 @@ Sprint 2 built Phase 16 (Incremental Analysis with Caching) — SHA-256 content-
 
 **Retro outcome**: 1 skill change applied — refined haiku task threshold: single-file mechanical = haiku, multi-file wiring = sonnet. 2/3 toward per-project stability (Sprint 1 and Sprint 2 both had minimal/no skill changes).
 
-**Notable**: First sprint with haiku agents on Uluka. T4 (config extension, 5 tool uses, 13s) validated haiku for single-file mechanical tasks. T3 (CLI commands, 25 tool uses, 61s) showed multi-file wiring is sonnet-appropriate even when individual changes are small. Tokens per accepted LOC dropped to ~374 — best efficiency across all Uluka sprints.
+**Notable**: First sprint with haiku agents on Uluka. T4 (config extension, 5 tool uses, 13s) validated haiku for single-file mechanical tasks. T3 (CLI commands, 25 tool uses, 61s) showed multi-file wiring is sonnet-appropriate even when individual changes are small.
+
+## 8.1.5 Sprint 3: Claude Code Hook Integration
+
+Sprint 3 built Phase 17 (Claude Code Hook Integration) — hook runner core with path validation and JSON output, pre-commit hook with staged file scanning, CLI commands, and setup documentation. 5 requirements (HOOK-01 through HOOK-05) delivered across 3 sequential waves.
+
+**Metrics**:
+
+<!-- generated-from: python3 tools/generate_tables.py compare uluka 1 2 3 -->
+| Metric | Sprint 1 | Sprint 2 | Sprint 3 | Delta (S2->S3) |
+|--------|----------|----------|----------|----------------|
+| Active session time | 21m 51s | 10m 44s | 12m 37s | +1m 53s |
+| Total tokens | 8.4M | 6.1M | 6.9M | +0.8M |
+| New-work tokens | 197K | 211K | 83K | -61% |
+| Opus % (tokens) | 59.9% | 68.4% | 88.1% | Orchestrator dominates |
+| Sonnet % (tokens) | 40.1% | 19.2% | 9.3% | Continuing drop |
+| Haiku % (tokens) | 0% | 12.4% | 2.7% | 1 haiku agent |
+| Subagents | 3 | 3 | 3 (2S+1H) | — |
+| API calls | 151 | 106 | 77 | -27% |
+| Tests | 320 (+83) | 348 (+28) | 370 (+22) | — |
+| Coverage | 69.82% | 69.85% | 70.22% (+0.37pp) | Steady climb |
+| Lint errors | 15 | 15 | 15 (Gate 2 caught +1, fixed) | Stable |
+| Gates first pass | yes | yes | no (lint) | First gate failure |
+| Insertions | ~2,542 | 826 | 890 | +8% |
+
+**Hypothesis results**:
+
+<!-- generated-from: python3 tools/generate_tables.py hypotheses uluka 3 -->
+| # | Hypothesis | Result | Evidence |
+|---|-----------|--------|----------|
+| H1 | 3-phase works for CLI | Confirmed | 4th consecutive sprint. Clean THINK->EXECUTE->SHIP. |
+| H5 | Gates catch real issues | **CONFIRMED** | Gate 2 (lint) caught unused `relative` import from T1 subagent. 16 errors > 15 max. Fixed in 1 cycle. **First time a gate actually blocked code across all Uluka sprints.** |
+| H7 | Skills are followed | **5/5** | PM Gherkin: YES. Architect cheapest model: YES (haiku for CLI wiring). ProdEng tests first: YES. Security input validation: YES. UX help text: YES. **First perfect compliance score.** |
+| H8 | Coverage gate | Confirmed | 70.22% > 65% floor. Steady upward trend. |
+| H9 | Lint gate | Confirmed | Gate 2 caught the unused import. First real enforcement action on Uluka. |
+
+**Retro outcome**: 1 orchestrator convention proposed (add lint self-check to subagent prompts). **No skill file changes** — 3/3 consecutive clean sprints on Uluka. **Per-project stability achieved.**
+
+**Notable**:
+- **H5 finally confirmed on Uluka**: after 3 sprints of gates passing first try, Gate 2 actually caught something. The sonnet subagent imported `relative` from `path` but used a different approach, leaving the dead import. Lint gate enforced the cap.
+- **H7 perfect score**: first 5/5 compliance across any sprint on any project. Skills are being followed consistently.
+- **Per-project stability**: 3 consecutive sprints with 0 skill file changes (S1: 0, S2: 1 minor threshold, S3: 0). The skill set is stable for Uluka.
+- **Haiku succeeds on CLI wiring again**: T3 (haiku) handled CLI command registration and docs, confirming the Sprint 2 finding that haiku works for mechanical tasks.
 
 ## 8.2 Dappled Shade Sprint 0: Cross-Project Generalization
 
@@ -439,21 +485,23 @@ Sprint 0 built the full M0 MVP: a terminal-based P2P encrypted messaging CLI ove
 
 **Metrics**:
 
+<!-- generated-from: python3 tools/generate_tables.py sprint dappled-shade 0 -->
 | Metric | Value |
 |--------|-------|
-| Active session time | 54m 6s (raw 426m 29s minus 6h 12m 23s sleep gap between Phase 2 and 3) |
-| Total tokens | 26.9M |
-| Opus % | 47.7% |
-| Sonnet % | 49.6% |
-| Haiku % | 2.8% |
-| Subagents | 14 (across 7 waves) |
-| API calls | 579 |
+| Active session time | 37m 43s (execution + retro, sleep gap excluded by >60s filter) |
+| Total tokens | 16.8M |
+| Opus % (tokens) | 48.2% |
+| Sonnet % (tokens) | 49.9% |
+| Haiku % (tokens) | 1.9% |
+| Subagents | 14 (across 7 waves, per retro) |
+| API calls | 330 |
 | Rust LOC | 3,268 (2,961 src/ + 307 tests/integration.rs) |
 | Tests | 57 passed, 3 ignored (2 live Tor, 1 doc) |
 | Gates first pass | No — clippy caught 3 issues, passed on second run |
 
 **Hypothesis results**:
 
+<!-- generated-from: python3 tools/generate_tables.py hypotheses dappled-shade 0 -->
 | # | Hypothesis | Result | Evidence |
 |---|-----------|--------|----------|
 | H1 | 3-phase works for Rust | Confirmed | Think produced coherent plan, Execute built 3,268 LOC in 7 waves, Ship gates all passed |
@@ -477,23 +525,25 @@ Sprint 1 added Olm per-message end-to-end encryption with forward secrecy on top
 
 **Metrics**:
 
+<!-- generated-from: python3 tools/generate_tables.py compare dappled-shade 0 1 -->
 | Metric | Sprint 0 | Sprint 1 | Delta |
 |--------|----------|----------|-------|
-| Active session time | 54m 6s | 21m 39s | -60% |
-| Total tokens | 26.9M | 15.5M | -42% |
-| New-work tokens | 1.26M | 565K | -55% |
-| Cache hit rate | — | 96.4% | — |
-| Opus % | 47.7% | 58.2% | +10.5pp |
-| Sonnet % | 49.6% | 41.8% | -7.8pp |
-| Haiku % | 2.8% | 0% | -2.8pp |
-| Subagents | 14 | 6 | -57% |
-| API calls | 579 | 255 | -56% |
+| Active session time | 37m 43s | 16m 3s | -57% |
+| Total tokens | 16.8M | 9.2M | -45% |
+| New-work tokens | 630K | 274K | -56% |
+| Cache hit rate | 96.3% | 97.1% | +0.8pp |
+| Opus % (tokens) | 48.2% | 59.5% | +11.3pp |
+| Sonnet % (tokens) | 49.9% | 40.5% | -9.4pp |
+| Haiku % (tokens) | 1.9% | 0% | -1.9pp |
+| Subagents | 14 (per retro) | 4 | -71% |
+| API calls | 330 | 145 | -56% |
 | Rust LOC | 3,268 | 4,403 (+1,135) | +35% |
 | Tests | 57 | 75 (+18) | +32% |
 | Gates first pass | no (clippy) | yes | Improved |
 
 **Hypothesis results**:
 
+<!-- generated-from: python3 tools/generate_tables.py hypotheses dappled-shade 1 -->
 | # | Hypothesis | Result | Evidence |
 |---|-----------|--------|----------|
 | H1 | 3-phase works for Rust | Confirmed | 2nd consecutive sprint. Clean execution. |
@@ -504,64 +554,74 @@ Sprint 1 added Olm per-message end-to-end encryption with forward secrecy on top
 
 **Retro outcome**: No skill changes proposed. This is **1/3 toward per-project stability** (first clean sprint on Dappled Shade).
 
-**Notable**: vodozemac API was much cleaner than arti (Sprint 0's pain point). Session.rs integration was surgical (+148 lines) — Sprint 0's architecture was well-factored. First-pass gate success (vs Sprint 0's clippy failure) suggests Sprint 0's skill amendments are working. Tokens per accepted LOC: ~306 — best ratio across all sprints on either project.
+**Notable**: vodozemac API was much cleaner than arti (Sprint 0's pain point). Session.rs integration was surgical (+148 lines) — Sprint 0's architecture was well-factored. First-pass gate success (vs Sprint 0's clippy failure) suggests Sprint 0's skill amendments are working.
 
 ## 8.3 Cross-Project Comparison
 
-Six sprints across two projects and two languages. Cross-project patterns are now visible across multiple iterations.
+Seven sprints across two projects and two languages. Cross-project patterns are now visible across multiple iterations.
 
 ### 8.3.1 Metrics comparison
 
-| | Uluka S0 | Uluka S1 | Uluka S2 | DS S0 | DS S1 | Trend |
-|---|---|---|---|---|---|---|
-| Active session time | 17m 29s | 25m 16s | 16m 56s | 54m 6s | 21m 39s | Both projects getting faster |
-| Total tokens | 14.4M | 13.6M | 9.8M | 26.9M | 15.5M | Decreasing on both |
-| New-work tokens | — | 1.45M | 309K | 1.26M | 565K | Improving efficiency |
-| Opus % | 63.9% | 61.7% | 65.7% | 47.7% | 58.2% | 58-66% range |
-| Sonnet % | 36.1% | 38.3% | 18.7% | 49.6% | 41.8% | Dropping as haiku takes load |
-| Haiku % | 0% | 0% | 15.6% | 2.8% | 0% | Uluka first real haiku usage |
-| Subagents | 4 | 4 | 4 | 14 | 6 | DS normalizing after greenfield |
-| API calls | 242 | 245 | 178 | 579 | 255 | Dropping on both |
-| Gates 1st pass | yes | yes | yes | no (clippy) | yes | 5/6 sprints clean |
-| H7 compliance | 3/5 | 4/5 | 4.5/5 | 4/5 | 5/5 | Improving toward ceiling |
-| Tokens/LOC | ~12,000 | ~9,700 | ~374 | ~8,200 | ~306 | Dramatic improvement |
+<!-- generated-from: python3 tools/generate_tables.py cross-project -->
+| | Uluka S0 | Uluka S1 | Uluka S2 | Uluka S3 | DS S0 | DS S1 | Trend |
+|---|---|---|---|---|---|---|---|
+| Active session time | 17m 39s | 21m 51s | 10m 44s | 12m 37s | 37m 43s | 16m 3s | Both projects getting faster |
+| Total tokens | 9.4M | 8.4M | 6.1M | 6.9M | 16.8M | 9.2M | Decreasing on both |
+| New-work tokens | 287K | 197K | 211K | 83K | 630K | 274K | Improving efficiency |
+| Opus % (tokens) | 65.8% | 59.9% | 68.4% | 88.1% | 48.2% | 59.5% | Varies by sprint |
+| Sonnet % (tokens) | 34.2% | 40.1% | 19.2% | 9.3% | 49.9% | 40.5% | Dropping on Uluka |
+| Haiku % (tokens) | 0% | 0% | 12.4% | 2.7% | 1.9% | 0% | Used when appropriate |
+| Subagents | 3 | 3 | 3 | 3 (2S+1H) | 14 (retro) | 4 | Stabilizing |
+| API calls | 145 | 151 | 106 | 77 | 330 | 145 | Dropping on both |
+| Gates 1st pass | yes | yes | yes | no (lint) | no (clippy) | yes | 5/7 clean; both failures caught real bugs |
+| H7 compliance | 3/5 | 4/5 | 4.5/5 | **5/5** | 4/5 | 5/5 | Ceiling reached |
+| Tokens/LOC (new-work) | ~239 | ~78 | ~256 | ~93 | ~193 | ~242 | Stable 78-256 range |
 
 ### 8.3.2 What the data shows
 
 **Patterns confirmed across all conditions**:
-- 3-phase structure (H1): confirmed on 6 consecutive sprints across TS and Rust, existing and greenfield codebases
-- Wave parallelism (H4): adapts to project structure — 4 agents for coupled TS, 14→6 agents for Rust as architecture stabilizes
+- 3-phase structure (H1): confirmed on 7 consecutive sprints across TS and Rust, existing and greenfield codebases
+- Wave parallelism (H4): adapts to project structure — 3-4 agents for coupled TS, 14->6 agents for Rust as architecture stabilizes
 - 5-skill consensus (H2, H3): coherent output across CLI tools and crypto P2P, no contradictions
-- Skill compliance (H7): improving from 3/5 → 5/5 over 6 sprints, with TDD ordering as the only persistent partial
+- Skill compliance (H7): improved from 3/5 -> 5/5 over 7 sprints. First perfect score on Uluka S3. TDD ordering was the last holdout.
 - Skills generalize across languages (H12): confirmed on DS S1 — Sprint 0's amendments prevented repeat failures
+- Gates catch real issues (H5): confirmed on both projects. DS S0 clippy caught 3 bugs, Uluka S3 lint caught unused import.
 
 **Trends**:
-- Active session time is decreasing on both projects as skills stabilize and architects make better plans
-- Tokens per accepted LOC dropped dramatically: Uluka 12,000 → 374, DS 8,200 → 306. Cache hit rates above 96% are driving this.
-- Haiku appeared on Uluka S2 (15.6%) with confirmed viability for single-file mechanical tasks
-- Gates are most valuable on first contact (DS S0 clippy caught 3 bugs). On mature codebases, gates confirm rather than catch.
-- Agent count is stabilizing: 4 per sprint on Uluka, DS normalizing from 14 to 6
+- Active session time is decreasing on both projects: Uluka 22m -> 11m -> 13m, DS 38m -> 16m
+- New-work tokens per accepted LOC is stable at 78-256 across all sprints — no dramatic trend, but consistently efficient
+- Haiku is established for mechanical tasks: confirmed on Uluka S2 and S3 (CLI wiring, config, docs)
+- Gate failures are rare but real: 2/7 sprints had first-pass failures, both caught genuine bugs (clippy lint, unused import). Gates earn their keep.
+- Agent count is stabilizing: 3 per sprint on Uluka, DS normalizing from 14 to 4
 
 **Per-project stability status**:
-- Uluka: 2/3 clean sprints (Sprint 1: 0 skill edits, Sprint 2: 1 minor threshold refinement)
+- **Uluka: STABLE** — 3/3 consecutive clean sprints (S1: 0 edits, S2: 1 minor threshold, S3: 0 edits). Skill set is frozen.
 - Dappled Shade: 1/3 (Sprint 1 had 0 skill changes proposed)
 - Cross-project: Rust-specific additions don't invalidate TS skills — they're additive, not contradictory
+
+**Subagent log discovery**: Uluka S3 investigation confirmed that subagent logs exist at `~/.claude/projects/{slug}/{session-id}/subagents/agent-{id}.jsonl`. They are NOT in the parent JSONL — they must be discovered and aggregated separately. The extract_metrics.py script now handles this. collect.sh should be updated to match.
 
 ## 9. Tokens per Accepted LOC
 
 A diagnostic metric the skeptic review identified as conspicuously absent. Calculated as total tokens / lines of code added.
 
+<!-- generated-from: python3 tools/generate_tables.py tokens-per-loc -->
 | Sprint | Total Tokens | New-work Tokens | LOC Added | Tokens/LOC (total) | Tokens/LOC (new-work) |
 |--------|-------------|----------------|-----------|-------------------|----------------------|
-| Uluka S0 | 14.4M | — | ~1,200 | ~12,000 | — |
-| Uluka S1 | 13.6M | 1.45M | ~2,542 | ~5,350 | ~570 |
-| Uluka S2 | 9.8M | 309K | 826 | ~11,860 | ~374 |
-| DS S0 | 26.9M | 1.26M | 3,268 | ~8,200 | ~386 |
-| DS S1 | 15.5M | 565K | 1,845 | ~8,400 | ~306 |
+| Uluka S0 | 9.4M | 287K | ~1,200 | ~7,833 | ~239 |
+| Uluka S1 | 8.4M | 197K | ~2,542 | ~3,305 | ~78 |
+| Uluka S2 | 6.1M | 211K | 826 | ~7,385 | ~256 |
+| Uluka S3 | 6.9M | 83K | 890 | ~7,753 | ~93 |
+| DS S0 | 16.8M | 630K | 3,268 | ~5,141 | ~193 |
+| DS S1 | 9.2M | 274K | 1,135 | ~8,106 | ~242 |
 
-**Note**: Total tokens/LOC is misleading because cache reads dominate (96%+ hit rates). New-work tokens/LOC is more meaningful — it measures how many non-cached tokens are consumed per line of accepted code. The dramatic improvement from ~12,000 (Uluka S0) to ~306-374 (latest sprints) is primarily driven by cache efficiency, not by writing fewer tokens.
+**Note**: Total tokens/LOC is misleading because cache reads dominate (96%+ hit rates). New-work tokens/LOC is more meaningful — it measures how many non-cached tokens are consumed per line of accepted code. New-work tokens/LOC is stable in the 78-256 range across all sprints — there is no dramatic improvement trend. The variation reflects milestone complexity, not workflow maturity.
 
 Do not compare across project types — only across sprints on the same project. Greenfield code produces more LOC per token because there are no existing patterns to understand.
+
+**Metrics correction (applied in this session)**: All sprint metrics were re-verified using `extract_metrics.py` with message ID deduplication and subagent log aggregation. Previous numbers were inflated by ~1.5x due to two bugs in the collection tooling: (1) streaming logged the same message ID multiple times without deduplication, (2) subagent logs at `{session-id}/subagents/agent-*.jsonl` were not always included. Both bugs are now fixed in `extract_metrics.py` and `collect.sh`.
+
+**Data source**: All sprint metrics are stored in `sprints.json` (single source of truth). Tables in this document are generated from that data using `tools/generate_tables.py` — see `<!-- generated-from -->` comments above each table. To regenerate after a correction: run the indicated command and paste the output over the existing table.
 
 ## 10. Open Questions
 
@@ -598,7 +658,7 @@ Hypotheses use a 4-level scale:
 - **Project selection is not independent**: both test projects were chosen by the same person who created Flowstate. Neither is a team project, a web app with a database, or an inherited messy codebase.
 - **Skill compliance is self-assessed**: H7 audits are performed by the person who wrote the skills, not by an independent reviewer.
 - **Model versions are unrecorded**: sprints record model tier (opus/sonnet/haiku) but not specific model version. Claude capability changes between sprints could confound comparisons.
-- **Tokens per accepted LOC is high**: ~8,000-12,000 tokens per line of code. This is the real cost of agent-based development and should not be hidden.
+- **Tokens per accepted LOC**: ~3,300-8,100 total tokens/LOC (dominated by cache reads), ~78-256 new-work tokens/LOC. Total is misleading; new-work is the meaningful efficiency metric.
 
 ### 11.3 Planned experiments
 

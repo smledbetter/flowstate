@@ -45,6 +45,10 @@ Gate commands are project-specific. Configure them in `flowstate.config.md`.
 - Minimize transitive dependencies.
 - Audit for known vulnerabilities regularly.
 
+## Test Coverage Verification
+
+Before declaring gates passed, confirm that every new or modified source file has a corresponding test file that was also added or modified in this sprint. Check with `git diff --name-only` against the sprint baseline SHA — if a source file appears without a matching test file, the feature is incomplete. This is the lightweight version of TDD enforcement: we don't require test-before-code commit ordering, but we do require tests to exist before shipping.
+
 ## Review Checklist
 
 - [ ] New code has corresponding tests

@@ -2,24 +2,26 @@
 # Flowstate Sprint Metrics Collector
 # Parses Claude Code JSONL session logs for sprint metrics.
 #
-# Usage: ./metrics/collect.sh [--after <ISO-timestamp>] <session-id> [session-id...]
+# Usage: ./metrics/collect.sh [--json] [--after <ISO-timestamp>] <session-id> [session-id...]
 #
 # The script auto-detects the project log directory from your current working
 # directory. It converts `pwd` to the Claude Code project slug format
 # (e.g., /Users/foo/Sites/MyProject -> -Users-foo-Sites-MyProject).
 #
 # Options:
+#   --json               Output JSON matching sprints.json metrics schema
 #   --after <timestamp>  Only count events after this ISO timestamp.
 #                        Use when a sprint started mid-session.
 #
 # Examples:
 #   ./metrics/collect.sh abc123-def456
+#   ./metrics/collect.sh --json abc123-def456
 #   ./metrics/collect.sh --after 2026-02-18T03:20:00Z abc123-def456
 
 set -euo pipefail
 
 # Auto-detect project log directory from cwd
-PROJECT_SLUG=$(pwd | sed 's|/|-|g')
+PROJECT_SLUG=$(pwd | sed 's|/|-|g; s| |-|g')
 PROJECT_LOGS="$HOME/.claude/projects/$PROJECT_SLUG"
 
 if [ ! -d "$PROJECT_LOGS" ]; then
@@ -29,8 +31,13 @@ if [ ! -d "$PROJECT_LOGS" ]; then
 fi
 
 AFTER_TS=""
+JSON_OUTPUT=""
 
-# Parse --after flag
+# Parse flags
+if [ "${1:-}" = "--json" ]; then
+  JSON_OUTPUT="1"
+  shift
+fi
 if [ "${1:-}" = "--after" ]; then
   AFTER_TS="$2"
   shift 2
@@ -56,13 +63,15 @@ fi
 
 SESSION_IDS=("$@")
 
-echo "========================================"
-echo "  Flowstate Sprint Metrics Report"
-echo "========================================"
-if [ -n "$AFTER_TS" ]; then
-  echo "  (filtered: events after $AFTER_TS)"
+if [ -z "$JSON_OUTPUT" ]; then
+  echo "========================================"
+  echo "  Flowstate Sprint Metrics Report"
+  echo "========================================"
+  if [ -n "$AFTER_TS" ]; then
+    echo "  (filtered: events after $AFTER_TS)"
+  fi
+  echo ""
 fi
-echo ""
 
 # Collect all JSONL files (parent sessions + their subagents)
 LOGFILES=()
@@ -93,6 +102,7 @@ import json, sys
 from collections import defaultdict
 from datetime import datetime
 
+json_output = True if '$JSON_OUTPUT' else False
 after_ts = '$AFTER_TS' if '$AFTER_TS' else None
 after_dt = None
 if after_ts:
@@ -104,17 +114,15 @@ logfiles = sys.argv[1:]
 session_times = {}
 is_subagent = {}
 
-# Token counters
-input_tokens = 0
-output_tokens = 0
-cache_read = 0
-cache_creation = 0
-model_tokens = defaultdict(lambda: {'input': 0, 'output': 0, 'cache_read': 0, 'cache_creation': 0})
+# Deduplicate by message ID (streaming can log same message multiple times)
+# Later events for same msg overwrite — usage values are identical across dupes
+msg_data = {}  # msg_id -> {usage, model, is_subagent}
+spawn_msgs = set()  # msg_ids that contained a Task spawn
 
 # Counts
 spawn_count = 0
-api_count = 0
-human_idle_seconds = 0  # gaps between assistant and next human entry (>60s)
+parent_timestamps = []  # all timestamps from parent sessions, for gap-summed active time
+edit_counts = defaultdict(int)  # file_path -> number of Edit/Write operations
 
 for logfile in logfiles:
     sid = logfile.rsplit('/', 1)[-1].replace('.jsonl', '')
@@ -148,35 +156,39 @@ for logfile in logfiles:
                 first_ts = ts_str
             last_ts = ts_str
 
-            # Token usage (assistant messages only)
+            # Collect parent timestamps for gap-summed active time
+            if not is_sub:
+                parent_timestamps.append(ts_str)
+
+            # Assistant messages: deduplicate by message ID
             if d.get('type') == 'assistant':
-                api_count += 1
                 msg = d.get('message', {})
+                mid = msg.get('id', ts_str)
                 usage = msg.get('usage', {})
                 model = msg.get('model', 'unknown')
+                # Always overwrite — later events for same msg have identical usage
+                msg_data[mid] = {'usage': usage, 'model': model, 'is_subagent': is_sub}
 
-                inp = usage.get('input_tokens', 0)
-                out = usage.get('output_tokens', 0)
-                cr = usage.get('cache_read_input_tokens', 0)
-                cc = usage.get('cache_creation_input_tokens', 0)
+                # Agent spawn count (only from parent sessions, once per message)
+                if not is_sub and mid not in spawn_msgs:
+                    content_blocks = msg.get('content', [])
+                    if isinstance(content_blocks, list):
+                        for block in content_blocks:
+                            if isinstance(block, dict) and block.get('type') == 'tool_use' and block.get('name') == 'Task':
+                                spawn_count += 1
+                                spawn_msgs.add(mid)
+                                break
 
-                input_tokens += inp
-                output_tokens += out
-                cache_read += cr
-                cache_creation += cc
-
-                model_tokens[model]['input'] += inp
-                model_tokens[model]['output'] += out
-                model_tokens[model]['cache_read'] += cr
-                model_tokens[model]['cache_creation'] += cc
-
-            # Agent spawn count - Task tool_use is nested in assistant message content blocks
-            if d.get('type') == 'assistant':
-                content_blocks = d.get('message', {}).get('content', [])
+                # Track file edit/write operations for rework rate
+                content_blocks = msg.get('content', [])
                 if isinstance(content_blocks, list):
                     for block in content_blocks:
-                        if isinstance(block, dict) and block.get('type') == 'tool_use' and block.get('name') == 'Task':
-                            spawn_count += 1
+                        if isinstance(block, dict) and block.get('type') == 'tool_use':
+                            tool_name = block.get('name', '')
+                            if tool_name in ('Edit', 'Write', 'mcp__acp__Edit', 'mcp__acp__Write'):
+                                fp = block.get('input', {}).get('file_path', '')
+                                if fp:
+                                    edit_counts[fp] += 1
 
     if first_ts and last_ts:
         t1 = datetime.fromisoformat(first_ts.replace('Z', '+00:00'))
@@ -185,44 +197,35 @@ for logfile in logfiles:
     else:
         session_times[sid] = 0
 
-# --- Human idle time (parent sessions only) ---
-IDLE_THRESHOLD = 60  # seconds
+# Aggregate from deduplicated messages
+input_tokens = 0
+output_tokens = 0
+cache_read = 0
+cache_creation = 0
+model_tokens = defaultdict(lambda: {'input': 0, 'output': 0, 'cache_read': 0, 'cache_creation': 0})
+api_count = len(msg_data)
 
-for logfile in logfiles:
-    if '/subagents/' in logfile:
-        continue
-    last_assistant_dt = None
-    with open(logfile) as f:
-        for line in f:
-            try:
-                d = json.loads(line)
-            except:
-                continue
-            ts_str = d.get('timestamp')
-            if not ts_str:
-                continue
-            if after_dt:
-                try:
-                    event_dt = datetime.fromisoformat(ts_str.replace('Z', '+00:00'))
-                    if event_dt < after_dt:
-                        continue
-                except:
-                    continue
-            else:
-                event_dt = datetime.fromisoformat(ts_str.replace('Z', '+00:00'))
+for mid, data in msg_data.items():
+    usage = data['usage']
+    model = data['model']
+    inp = usage.get('input_tokens', 0)
+    out = usage.get('output_tokens', 0)
+    cr = usage.get('cache_read_input_tokens', 0)
+    cc = usage.get('cache_creation_input_tokens', 0)
+    input_tokens += inp
+    output_tokens += out
+    cache_read += cr
+    cache_creation += cc
+    model_tokens[model]['input'] += inp
+    model_tokens[model]['output'] += out
+    model_tokens[model]['cache_read'] += cr
+    model_tokens[model]['cache_creation'] += cc
 
-            if d.get('type') == 'assistant':
-                last_assistant_dt = event_dt
-            elif d.get('type') == 'human' and last_assistant_dt:
-                gap = (event_dt - last_assistant_dt).total_seconds()
-                if gap > IDLE_THRESHOLD:
-                    human_idle_seconds += gap
-                last_assistant_dt = None
+IDLE_THRESHOLD = 60  # seconds — gaps larger than this are counted as idle
 
 # --- Output ---
 
-print('## Wall Time')
-print()
+# Compute wall time (needed by both JSON and text output)
 parent_seconds = 0
 sub_seconds = 0
 parent_sessions = []
@@ -234,6 +237,68 @@ for sid, secs in session_times.items():
     else:
         parent_sessions.append((sid, secs))
         parent_seconds += secs
+
+# Compute shared values
+total = input_tokens + output_tokens + cache_read + cache_creation
+new_work_tokens = output_tokens + cache_creation
+cache_pct = (cache_read / total * 100) if total > 0 else 0
+
+# Model percentages by tokens
+model_pcts = {}
+for model, counts in model_tokens.items():
+    mtotal = counts['input'] + counts['output'] + counts['cache_read'] + counts['cache_creation']
+    model_pcts[model] = (mtotal / total * 100) if total > 0 else 0
+
+opus_pct = round(sum(v for k, v in model_pcts.items() if 'opus' in k), 1)
+sonnet_pct = round(sum(v for k, v in model_pcts.items() if 'sonnet' in k), 1)
+haiku_pct = round(sum(v for k, v in model_pcts.items() if 'haiku' in k), 1)
+
+def fmt_tokens(n):
+    if n >= 1_000_000:
+        return f'{n / 1_000_000:.1f}M'
+    if n >= 1_000:
+        return f'{n // 1_000}K'
+    return str(n)
+
+# Active session time: sum gaps <= threshold across all parent timestamps
+# This correctly handles autonomous sessions where no human messages exist
+parent_timestamps.sort()
+ts_objects = [datetime.fromisoformat(t.replace('Z', '+00:00')) for t in parent_timestamps]
+active_seconds = 0
+for i in range(1, len(ts_objects)):
+    gap = (ts_objects[i] - ts_objects[i-1]).total_seconds()
+    if gap <= IDLE_THRESHOLD:
+        active_seconds += gap
+active_mins = int(active_seconds) // 60
+active_secs = int(active_seconds) % 60
+
+# Rework rate: total edits / unique files edited
+total_edits = sum(edit_counts.values())
+unique_files = len(edit_counts)
+rework_rate = round(total_edits / unique_files, 1) if unique_files > 0 else None
+
+if json_output:
+    result = {
+        'active_session_time_s': int(active_seconds),
+        'active_session_time_display': f'{active_mins}m {active_secs}s',
+        'total_tokens': total,
+        'total_tokens_display': fmt_tokens(total),
+        'new_work_tokens': new_work_tokens,
+        'new_work_tokens_display': fmt_tokens(new_work_tokens),
+        'cache_hit_rate_pct': round(cache_pct, 1) if total > 0 else None,
+        'opus_pct': opus_pct,
+        'sonnet_pct': sonnet_pct,
+        'haiku_pct': haiku_pct,
+        'subagents': spawn_count,
+        'subagent_note': None,
+        'api_calls': api_count,
+        'rework_rate': rework_rate,
+    }
+    print(json.dumps(result, indent=2))
+    sys.exit(0)
+
+print('## Wall Time')
+print()
 
 for sid, secs in parent_sessions:
     mins = int(secs) // 60
@@ -255,19 +320,17 @@ total_mins = int(parent_seconds) // 60
 total_secs = int(parent_seconds) % 60
 print(f'  WALL TIME: {total_mins}m {total_secs}s  (parent session duration)')
 
-idle_mins = int(human_idle_seconds) // 60
-idle_secs = int(human_idle_seconds) % 60
-agent_seconds = parent_seconds - human_idle_seconds
-agent_mins = int(max(0, agent_seconds)) // 60
-agent_secs = int(max(0, agent_seconds)) % 60
-print(f'  Human idle: {idle_mins}m {idle_secs}s  (gaps > 60s between assistant and human entries)')
-print(f'  Agent active: {agent_mins}m {agent_secs}s  (session time minus human idle)')
+idle_seconds = parent_seconds - active_seconds
+idle_mins = int(idle_seconds) // 60
+idle_secs = int(idle_seconds) % 60
+print(f'  Idle time: {idle_mins}m {idle_secs}s  (gaps > {IDLE_THRESHOLD}s between log entries)')
+print(f'  ACTIVE TIME: {active_mins}m {active_secs}s  (sum of gaps <= {IDLE_THRESHOLD}s)')
 print()
 
 print('## Token Usage')
 print()
 total = input_tokens + output_tokens + cache_read + cache_creation
-new_work = input_tokens + output_tokens + cache_creation
+new_work = output_tokens + cache_creation
 cache_pct = (cache_read / total * 100) if total > 0 else 0
 
 print(f'  Input tokens:          {input_tokens:>12,}')
@@ -276,7 +339,7 @@ print(f'  Cache read tokens:     {cache_read:>12,}')
 print(f'  Cache creation tokens: {cache_creation:>12,}')
 print(f'  -----------------------------------')
 print(f'  Total tokens:          {total:>12,}')
-print(f'  New-work tokens:       {new_work:>12,}  (input + output + cache_creation)')
+print(f'  New-work tokens:       {new_work:>12,}  (output + cache_creation)')
 print(f'  Cache hit rate:        {cache_pct:>11.1f}%')
 print()
 
@@ -297,15 +360,17 @@ print('## API Calls')
 print()
 print(f'  Total API calls: {api_count}')
 print()
-" "\${LOGFILES[@]}"
+" "${LOGFILES[@]}"
 
-echo "========================================"
-echo "  Run these manually:"
-echo "========================================"
-echo ""
-echo "  # LOC delta:"
-echo "  git diff --stat {start-sha}..HEAD"
-echo ""
-echo "  # Test count / coverage:"
-echo "  (use your project's test and coverage commands)"
-echo ""
+if [ -z "$JSON_OUTPUT" ]; then
+  echo "========================================"
+  echo "  Run these manually:"
+  echo "========================================"
+  echo ""
+  echo "  # LOC delta:"
+  echo "  git diff --stat {start-sha}..HEAD"
+  echo ""
+  echo "  # Test count / coverage:"
+  echo "  (use your project's test and coverage commands)"
+  echo ""
+fi

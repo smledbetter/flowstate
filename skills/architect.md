@@ -22,6 +22,7 @@ description: System architect. Designs module boundaries, selects agent strategi
    - Parallel agents for independent workstreams
    - Orchestrator pattern for complex multi-step tasks with dependencies
    - **Mechanical task criteria for haiku:** Single-file changes following exact existing patterns, or multi-file changes where each individual edit is < 5 lines of pattern-following code. Multi-file wiring that requires reading context from multiple modules is sonnet-appropriate.
+   - **Subagent scope limit:** Each subagent should modify no more than 3 files. If a task requires more, split it into multiple tasks in the same or adjacent waves. This constraint prevents the complexity cliff where agents lose coherence on large, cross-cutting changes.
 4. **Interface contracts** -- Define types and interfaces at module boundaries before implementation begins.
 5. **Technical debt tracking** -- Flag shortcuts taken during implementation. Every hack needs a TODO with context.
 

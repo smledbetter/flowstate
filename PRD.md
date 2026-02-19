@@ -117,6 +117,8 @@ This distinction is load-bearing.
 
 Sprint 0 will identify which of the Weaveto.do skill instructions are actually gate-enforceable vs purely advisory.
 
+**Security review as separate agent**: during planning (Phase 1), the security auditor perspective should be loaded into the consensus agent to shape acceptance criteria. During implementation (Phase 2), security checks should be run as a dedicated review agent or gate, not as instructions loaded into implementing subagents. Research (SusVibes benchmark) shows that agents given security instructions alongside implementation tasks produce 7% worse functional correctness with minimal security improvement. Planning and auditing are separate from implementing — the same agent should not implement and audit simultaneously.
+
 ### 4.3 The Architect
 
 The architect is the lead agent. It:
@@ -173,13 +175,18 @@ Gates are non-negotiable. A sprint cannot ship unless all enabled gates pass:
 | No regressions | Required | Enabled/disabled |
 | Security audit (OWASP review) | Optional | Severity threshold |
 | Retro format check | Required | Enabled/disabled |
+| Smoke test | Optional | Command (one real end-to-end exercise) |
 | Custom gates | None | Command + pass/fail criteria |
+
+**Smoke test gate**: one command that exercises the real system end-to-end, not mocks. Example: for a CLI tool, `uluka verify ./fixtures/sample-project` and check output. For a P2P app, two processes connect and exchange a message over localhost. This gate exists because static gates (tests, lint, types) can all pass while the product doesn't actually work — mocks hide integration failures. Evidence: Dappled Shade Sprint 1 shipped 75 passing tests with all gates green, but the real Tor integration was never tested (all integration tests used MockTorService). See RESULTS.md and FeatBench research on F2P testing.
 
 **Custom gates** are how skill instructions become enforceable. Example: the security auditor skill says "no plaintext logging." The corresponding custom gate is: `grep -r "console.log\|console.error" src/ --include="*.ts" | grep -v "// allowed"` must return empty.
 
 **Retro format gate**: the retrospective must contain at least one `- Before` / `+ After` diff block, or it is rejected. This prevents agents from producing paragraph-style retros instead of actionable diffs.
 
-Failed gates produce specific findings with file paths and line numbers, not just pass/fail.
+**Phase 3 completion checklist**: Phase 3 ends with the agent printing a completion checklist — each required artifact marked `[x]` or `[MISSING]`. Required artifacts: metrics reports (text + JSON), retrospective (with hypothesis table and diff proposals), next baseline, roadmap update, committed code. Any `[MISSING]` item must be fixed before the sprint is considered shipped.
+
+Failed gates produce specific findings with file paths and line numbers, not just pass/fail. When tests fail, classify each failure as **regression** (test existed before this sprint and now fails) or **feature** (new test that doesn't pass yet) by comparing against the pre-sprint test list in the baseline. This distinction matters: regressions mean the agent damaged existing code (fix: scope constraints), while feature failures mean implementation is incomplete (fix: finish the task). Evidence: FeatBench found regressions are the dominant failure mode in agent-generated code.
 
 ### 4.7 Metrics
 
@@ -195,7 +202,7 @@ Metrics are organized into **primary** (drive decisions) and **diagnostic** (inv
 
 **Active session time note**: A sprint may span multiple agent sessions (due to the 50% context break rule). Active session time is the sum of active session durations, not the delta between first session start and last session end. Breaks between sessions (human away from keyboard, overnight gaps) are excluded. Session durations are parsed from Claude Code's JSONL session logs — each log entry has a `timestamp` field, so active session time is `last_event_timestamp - first_event_timestamp`. No manual recording needed.
 
-**Session log structure**: Parent session logs live at `~/.claude/projects/{project-slug}/{session-id}.jsonl`. Subagent sessions are stored in `~/.claude/projects/{project-slug}/{session-id}/subagents/agent-{id}.jsonl`. Token usage and model mix must include subagent logs — otherwise the report only reflects the orchestrator's API calls and misses all worker token usage. The `metrics/collect.sh` script automatically discovers and includes subagent logs for each parent session.
+**Session log structure**: Parent session logs live at `~/.claude/projects/{project-slug}/{session-id}.jsonl`. Subagent sessions are stored in `~/.claude/projects/{project-slug}/{session-id}/subagents/agent-{id}.jsonl`. Token usage and model mix must include subagent logs — otherwise the report only reflects the orchestrator's API calls and misses all worker token usage. The `collect.sh` script (at `~/.flowstate/{project-slug}/metrics/collect.sh`) automatically discovers and includes subagent logs for each parent session. It must be run from the project directory so it can derive the correct session log path.
 
 **Diagnostic metrics** — investigate when primaries go wrong:
 
@@ -213,7 +220,7 @@ Metrics are organized into **primary** (drive decisions) and **diagnostic** (inv
 
 **What we explicitly don't track** (yet): LOC as a productivity metric, skill change "impact" (no causal mechanism), "context utilization %" as a quality proxy (high read-to-write ratios can be correct behavior).
 
-Metrics are stored in `metrics/sprint-{N}.json` and a summary appended to `metrics/HISTORY.md`.
+Metrics are stored in `~/.flowstate/{project-slug}/metrics/` (reports, baselines, gate logs). Cross-project metrics live in the Flowstate repo's `sprints.json`.
 
 ### 4.8 The Retrospective
 
@@ -248,7 +255,11 @@ Evidence: Sprint 2 gate log, lines 45-67
 
 The retro format gate (section 4.6) enforces this: a retrospective without at least one `- Before` / `+ After` block is rejected automatically.
 
+The agent proposes changes during Phase 3 but does **not** apply them. The human reviews the retrospective **after the sprint session ends** — not mid-session. This allows the agent to complete all Phase 3 work (metrics, retro, baseline, roadmap update) in one uninterrupted pass.
+
 The human can: approve, modify, or reject each change individually. Rejected changes include a reason that feeds into the next retro ("Human rejected X because Y — do not re-propose without new evidence").
+
+**Simplification bias**: when proposing skill changes, prefer removing or simplifying instructions over adding new ones. Each instruction added reduces agent compliance with all other instructions — research (Vibe Checker, VERICODE) shows compliance drops ~6 percentage points per additional instruction, falling below 50% at 3+ simultaneous instructions. The retro should justify any new instruction by explaining why it's worth the compliance cost to existing instructions.
 
 **Skill pruning**: every 3 sprints, the retro flags skill instructions for review using two categories:
 
@@ -268,9 +279,8 @@ The human decides. The default for ambiguous cases is **keep** — it's cheaper 
 project/
 ├── PRD.md                          # Product requirements (user-written)
 ├── CLAUDE.md                       # Claude Code config (generated + evolved)
-├── flowstate.config.md             # Flowstate configuration
 ├── .claude/
-│   └── skills/                     # Skill files
+│   └── skills/                     # Skill files (gitignored)
 │       ├── product-manager.md
 │       ├── ux-designer.md
 │       ├── architect.md
@@ -278,19 +288,27 @@ project/
 │       ├── security-auditor.md
 │       └── {project-specific}.md
 ├── docs/
+│   ├── ROADMAP.md                  # Milestones broken into sprint-sized phases
 │   ├── milestones/
 │   │   └── M{N}-{name}/
 │   │       ├── acceptance.md       # Gherkin acceptance criteria
 │   │       └── implementation.md   # Wave-based execution plan
-│   ├── STATE.md                    # Current project state
 │   └── research/                   # Cached knowledge artifacts
-├── metrics/
-│   ├── sprint-{N}.json             # Raw metrics per sprint
-│   └── HISTORY.md                  # Human-readable trends
-├── retrospectives/
-│   └── sprint-{N}.md               # Retro report + change proposals
 └── src/                            # Project source code
+
+~/.flowstate/{project-slug}/
+├── flowstate.config.md             # Flowstate configuration
+├── SPRINT-{N}.md                   # Sprint prompt (filled-in copy)
+├── metrics/
+│   ├── collect.sh                  # Metrics collector (auto-detects project from cwd)
+│   ├── baseline-sprint-{N}.md      # Pre-sprint baselines
+│   ├── sprint-{N}-gates.log        # Gate pass/fail output
+│   └── sprint-{N}-report.txt       # Collected metrics
+└── retrospectives/
+    └── sprint-{N}.md               # Retro report + change proposals
 ```
+
+Flowstate workflow files (config, sprints, metrics, retrospectives) live outside the project repo at `~/.flowstate/{project-slug}/` so they don't clutter open-source repos. Skills must stay at `.claude/skills/` (Claude Code auto-loads from this path) but are gitignored.
 
 ### 5.2 Configuration: `flowstate.config.md`
 
@@ -323,16 +341,21 @@ Bootstrap happens in two phases to avoid context rot:
 1. Human writes PRD.md
 2. Architect reads PRD.md
 3. Generates `flowstate.config.md` and `CLAUDE.md` (project configuration only — not skills)
-4. Human reviews and approves
+4. `flowstate.config.md` must include a formatter and a linter as gates — every popular language has both (e.g., Prettier+ESLint for TS, cargo fmt+clippy for Rust, Black+Ruff for Python, gofmt+golangci-lint for Go). If the project has no formatter or linter configured, the bootstrap must set one up. Style enforcement without tooling is just a suggestion.
+5. Human reviews and approves
 
 Skills are **copied and adapted** from Flowstate's generic set, not generated from scratch. The architect may suggest which skills to include or exclude based on the PRD (e.g., "skip UX designer for a CLI tool"), but skill generation from PRD content is deferred until there's evidence about what good generated skills look like.
 
-**Phase B: Planning** (fresh agent session)
+**Phase B: Roadmap** (fresh agent session)
 1. Architect reads PRD.md + approved config from Phase A + copied skill files
-2. Proposes milestone breakdown with acceptance criteria
-3. Creates first sprint plan (M1 implementation.md)
-4. Human reviews and approves
-5. Sprint 1 begins
+2. Produces `docs/ROADMAP.md`: breaks PRD milestones into sprint-sized phases
+   - Each phase = one sprint, with scope bullets and gate criteria
+   - Dependency graph between phases (what blocks what)
+   - Sprint schedule table mapping phases to sprint numbers
+3. Human reviews, adjusts phase boundaries, approves
+4. First sprint begins (referencing the roadmap for scope)
+
+The roadmap bridges the gap between PRD milestones (what to build) and sprint prompts (what to build *this sprint*). Without it, every sprint re-derives scope from the PRD, which wastes context and produces inconsistent phase boundaries.
 
 Splitting bootstrap prevents the architect from planning milestones in a context window already full of generated config.
 
@@ -342,7 +365,7 @@ Splitting bootstrap prevents the architect from planning milestones in a context
 Human says: "sprint" or "start sprint for M{N}"
 
 PHASE 1+2: THINK then EXECUTE (single prompt, no human break)
-├── Architect loads: PRD, STATE.md, metrics/HISTORY.md, last retro
+├── Architect loads: PRD, docs/ROADMAP.md (current phase), last retro
 ├── Architect loads skills: PM + UX + Architect (as one consensus agent)
 ├── Consensus agent reads codebase + docs (once)
 ├── Outputs: acceptance.md (Gherkin), implementation.md (waves)
@@ -371,22 +394,27 @@ PHASE 1+2: THINK then EXECUTE (single prompt, no human break)
 │   └── If FAIL after 3 cycles: escalate to human
 └── PASS → Phase 3
 
-PHASE 3: SHIP
-├── git push (human approves)
-├── Doc sync: update STATE.md, milestone status
+PHASE 3: SHIP (agent runs autonomously, human reviews after)
+├── Collect metrics: collect.sh (text + JSON reports)
+├── Doc sync: update docs/ROADMAP.md (mark phase done, update current state)
 ├── Retrospective:
 │   ├── Collect primary + diagnostic metrics
 │   ├── Compare to previous sprint
 │   ├── Write report (what worked, what failed, with evidence)
 │   ├── Propose changes as diffs (not paragraphs)
 │   ├── Retro format gate: must contain ≥1 diff block or rejected
-│   └── Write: retrospectives/sprint-{N}.md
-├── Human reviews retro:
+│   └── Write: {FLOWSTATE}/retrospectives/sprint-{N}.md
+├── Commit sprint code work (skill changes NOT applied yet)
+├── Write next sprint baseline: {FLOWSTATE}/metrics/baseline-sprint-{N+1}.md
+├── Human reviews retro (post-sprint, not mid-session):
 │   ├── Approve/modify/reject each proposed change
 │   ├── Rejected changes include reason
-│   └── Approved changes applied to skills/config
+│   └── Approved changes applied to .claude/skills/ and committed
+├── Import to Flowstate repo: python3 tools/import_sprint.py --from <import-json>
 └── Sprint complete
 ```
+
+**Session hygiene**: each sprint should run in a fresh Claude Code session. Multi-sprint sessions are allowed but must be noted in the retro. The `--after` flag on collect.sh isolates token metrics when sessions span multiple sprints, but active time accuracy degrades with context compaction.
 
 ## 6. Deliverables
 
@@ -420,14 +448,18 @@ Flowstate/
 
 **New project (Tier 1)**:
 1. Copy `skills/` into your project's `.claude/skills/` and adapt for your language/domain
-2. Copy `tier-1/flowstate.config.md` into your project root and fill in gate commands
-3. Copy `tier-1/collect.sh` into your project's `metrics/`
-4. Fill in `tier-1/sprint.md` with your milestone scope and paste to start
+2. Create `~/.flowstate/{project-slug}/metrics/` and `~/.flowstate/{project-slug}/retrospectives/`
+3. Copy `tier-1/flowstate.config.md` into `~/.flowstate/{project-slug}/` and fill in gate commands
+4. Copy `tier-1/collect.sh` into `~/.flowstate/{project-slug}/metrics/`
+5. Add Flowstate patterns to your project's `.gitignore`: `SPRINT-*.md`, `flowstate.config.md`, `metrics/`, `retrospectives/`, `.claude/skills/`
+6. Write `docs/ROADMAP.md`: break PRD milestones into sprint-sized phases (see section 5.3 Phase B)
+7. Fill in `tier-1/sprint.md` (replacing `{FLOWSTATE}` with `~/.flowstate/{project-slug}`) and paste to start
 
 **Work project (Tier 2)**:
 1. Copy `skills/` into your project's `.claude/skills/` and adapt
-2. Fill in `tier-2/sprint.md` with your scope and paste to start
-3. After the sprint, review the sanitized export and copy to `imports/`
+2. Create `~/.flowstate/{project-slug}/` for retros and config
+3. Fill in `tier-2/sprint.md` with your scope and paste to start
+4. After the sprint, review the sanitized export and copy to `imports/`
 
 **Any LLM (Tier 3)**:
 1. Open `tier-3/sprint.md` and paste each phase prompt sequentially
@@ -463,10 +495,10 @@ These are not yet implemented as Claude Code skill files. Currently, sprints are
 
 Flowstate is validated through hypothesis-driven sprints across multiple projects. All experiment designs, hypothesis definitions, test protocols, sprint results, and cross-project analysis are documented in [RESULTS.md](RESULTS.md).
 
-**Current state** (as of 6 sprints across 2 projects):
-- 12 hypotheses tested (H1-H12), none falsified, H5 inconclusive on Uluka (gates keep passing first try)
-- Projects: Uluka (TypeScript CLI, 3 sprints), Dappled Shade (Rust P2P, 2 sprints)
-- Per-project stability: Uluka 2/3 clean sprints, Dappled Shade 1/3
+**Current state** (as of 7 sprints across 2 projects):
+- 12 hypotheses tested (H1-H12), none falsified, H5 confirmed on both projects (Uluka S3 lint gate caught unused import, DS S0 clippy caught 3 bugs)
+- Projects: Uluka (TypeScript CLI, 4 sprints), Dappled Shade (Rust P2P, 2 sprints)
+- Per-project stability: **Uluka STABLE** (3/3 clean sprints), Dappled Shade 1/3
 
 ## 9. Tiered Portability
 
@@ -490,13 +522,14 @@ The human is the firewall. The retro agent produces a full local retrospective (
 
 ### 9.3 Tier 2 Sprint Flow
 
-Tier 2 sprints use a dedicated template (`templates/SPRINT-TIER2.md`) with these differences from Tier 1:
+Tier 2 sprints use a dedicated template (`tier-2/sprint.md`) with these differences from Tier 1:
 
 1. **Phase 1+2**: Same single-prompt structure. Agent plans and executes without human break. Gates are listed in the prompt (the agent runs them or the human runs them manually).
 2. **Phase 3**: Produces TWO outputs:
    - Full retrospective (local only, never exported)
-   - Sanitized export using `templates/sanitized-export.md` — numbers and generalized observations only
-3. **Import**: Human copies the sanitized export to `imports/{codename}-sprint-{N}.md` in the Flowstate repo.
+   - Sanitized export using `tier-2/sanitized-export.md` — numbers and generalized observations only
+3. **Retro storage**: Full retrospective saved to `~/.flowstate/{project-slug}/retrospectives/sprint-{N}.md` (stays local).
+4. **Import**: Human copies the sanitized export to `imports/{codename}-sprint-{N}.md` in the Flowstate repo.
 
 ### 9.4 What the Feedback Loop Loses in Tier 2
 
@@ -522,8 +555,9 @@ The scoreboard stays running. The improvement loop gets weaker — we keep the "
 | **Tier 1** | `tier-1/sprint.md`, `tier-1/flowstate.config.md`, `tier-1/collect.sh` | Full sprint with automated metrics |
 | **Tier 2** | `tier-2/sprint.md`, `tier-2/sanitized-export.md` | Sprint with sanitized export, no bash metrics |
 | **Tier 3** | `tier-3/sprint.md` | Self-contained prompt for any LLM |
-| **Shared** | `skills/` (5 files) | Generic skill files, copied and adapted per project |
+| **Shared** | `skills/` (5 files) | Generic skill files, copied to `.claude/skills/` per project (gitignored) |
 | **Imports** | `imports/` | Sanitized exports from Tier 2, named `{codename}-sprint-{N}.md` |
+| **Per-project** | `~/.flowstate/{project-slug}/` | Config, sprints, metrics, retrospectives — outside the project repo |
 
 ## 10. Success Criteria
 

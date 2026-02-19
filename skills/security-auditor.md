@@ -41,6 +41,10 @@ When reporting a finding:
 - **Impact:** What an attacker could do
 - **Fix:** Specific remediation steps
 
+## Deployment Model
+
+During **planning** (Phase 1 consensus agent), loading this skill is encouraged — security perspective should shape acceptance criteria and implementation plans upfront. During **implementation** (Phase 2 subagents), this skill should NOT be loaded into implementing agents. Instead, run security review as a separate pass: a dedicated subagent or a post-implementation audit wave before gates. Research shows agents given security instructions alongside implementation tasks produce worse code on both dimensions.
+
 ## Auto-Apply Behavior
 
 When invoked during code review, automatically flag:
