@@ -69,6 +69,32 @@ export interface HypothesesRegistry {
   hypotheses: Record<string, string>;
 }
 
+/* Session-level analytics types */
+
+export interface SessionBucket {
+  sessions: number;
+  total_tokens: number;
+  new_work_tokens: number;
+  active_time_s?: number;
+  api_calls?: number;
+  context_compressions?: number;
+}
+
+export interface ProjectSessions {
+  project: string;
+  label: string;
+  lang: string;
+  all: SessionBucket;
+  sprint: SessionBucket;
+  adhoc: SessionBucket;
+}
+
+export interface SessionsData {
+  _note: string;
+  snapshot_date: string;
+  projects: ProjectSessions[];
+}
+
 export interface DerivedSprint extends Sprint {
   newWorkTokensPerLoc: number;
   totalTokensPerLoc: number;

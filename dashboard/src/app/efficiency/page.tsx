@@ -14,7 +14,7 @@ export default function EfficiencyPage() {
 
   const cacheRates = sprints
     .map((s) => s.metrics.cache_hit_rate_pct)
-    .filter((v): v is number => v !== null);
+    .filter((v): v is number => typeof v === 'number' && !isNaN(v));
   const avgCache = cacheRates.length
     ? Math.round((cacheRates.reduce((a, b) => a + b, 0) / cacheRates.length) * 10) / 10
     : 0;

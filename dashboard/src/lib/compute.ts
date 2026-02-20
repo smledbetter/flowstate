@@ -14,29 +14,30 @@ export const BENCHMARKS = {
 export const PROJECT_COLORS: Record<string, string> = {
   uluka: '#38bdf8',
   'dappled-shade': '#fb923c',
+  'weaveto-do': '#a78bfa',
 };
 
 export function deriveMetrics(sprint: Sprint): DerivedSprint {
   const loc = sprint.metrics.loc_added || 1;
   return {
     ...sprint,
-    newWorkTokensPerLoc: Math.round(sprint.metrics.new_work_tokens / loc),
-    totalTokensPerLoc: Math.round(sprint.metrics.total_tokens / loc),
-    activeMinutes: Math.round(sprint.metrics.active_session_time_s / 60),
+    newWorkTokensPerLoc: Math.round((sprint.metrics.new_work_tokens || 0) / loc),
+    totalTokensPerLoc: Math.round((sprint.metrics.total_tokens || 0) / loc),
+    activeMinutes: Math.round((sprint.metrics.active_session_time_s || 0) / 60),
     projectColor: PROJECT_COLORS[sprint.project] || '#888',
   };
 }
 
 export function aggregateStats(sprints: Sprint[]) {
   const total = sprints.length;
-  const totalTokens = sprints.reduce((s, sp) => s + sp.metrics.total_tokens, 0);
-  const totalNewWork = sprints.reduce((s, sp) => s + sp.metrics.new_work_tokens, 0);
-  const totalLoc = sprints.reduce((s, sp) => s + sp.metrics.loc_added, 0);
-  const totalTime = sprints.reduce((s, sp) => s + sp.metrics.active_session_time_s, 0);
+  const totalTokens = sprints.reduce((s, sp) => s + (sp.metrics.total_tokens || 0), 0);
+  const totalNewWork = sprints.reduce((s, sp) => s + (sp.metrics.new_work_tokens || 0), 0);
+  const totalLoc = sprints.reduce((s, sp) => s + (sp.metrics.loc_added || 0), 0);
+  const totalTime = sprints.reduce((s, sp) => s + (sp.metrics.active_session_time_s || 0), 0);
   const gatesFirstPass = sprints.filter((sp) => sp.metrics.gates_first_pass).length;
   const cacheRates = sprints
     .map((sp) => sp.metrics.cache_hit_rate_pct)
-    .filter((v): v is number => v !== null);
+    .filter((v): v is number => typeof v === 'number' && !isNaN(v));
   const avgCache = cacheRates.length
     ? Math.round((cacheRates.reduce((a, b) => a + b, 0) / cacheRates.length) * 10) / 10
     : null;

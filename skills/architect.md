@@ -59,3 +59,4 @@ When making architectural decisions, document:
 - Choosing a dependency for one function when stdlib suffices
 - Designing for scale you do not have and may never need
 - Reading full implementation files into orchestrator context instead of just signatures and types
+- **Building custom utilities when proven libraries exist.** Before implementing any utility (encoding, parsing, date handling, crypto, serialization, etc.), check if a well-maintained library covers the use case. Custom implementations are only justified when: (1) no suitable library exists, (2) the dependency adds unacceptable weight or supply-chain risk, or (3) the functionality is core to the product's value proposition. "I can build it" is not justification.

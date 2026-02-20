@@ -447,6 +447,40 @@ Sprint 3 built Phase 17 (Claude Code Hook Integration) — hook runner core with
 - **Per-project stability**: 3 consecutive sprints with 0 skill file changes (S1: 0, S2: 1 minor threshold, S3: 0). The skill set is stable for Uluka.
 - **Haiku succeeds on CLI wiring again**: T3 (haiku) handled CLI command registration and docs, confirming the Sprint 2 finding that haiku works for mechanical tasks.
 
+## 8.1.6 Sprint 8: Crypto Library Knowledge Base + Evidence Quality (Experiment 2)
+
+Sprint 8 built Phase 21 (Crypto Library Knowledge Base + Evidence Quality) and served as **Experiment 2** — 3 bugs were planted on the `exp-2-adversarial` branch to test whether gates catch them.
+
+**Metrics**:
+
+| Metric | Value |
+|--------|-------|
+| Active session time | 10m 28s |
+| Total tokens | 4.2M |
+| New-work tokens | 212K |
+| Cache hit rate | 95.0% |
+| Opus % | 84.1% |
+| Sonnet % | 8.2% |
+| Haiku % | 7.7% |
+| Subagents | 2 |
+| Tests | 520 (+42) |
+| Coverage | 73.91% |
+| LOC added | 1,078 |
+| Gates first pass | no (3 regressions from planted bugs) |
+| Rework rate | 1.6 |
+
+**Hypothesis results**:
+
+| # | Hypothesis | Result | Evidence |
+|---|-----------|--------|----------|
+| H1 | 3-phase works for CLI | Confirmed | 8th consecutive sprint. Multi-session with regression fix. |
+| H5 | Gates catch real issues | **CONFIRMED** | 3/3 planted bugs caught: wrong threshold (Gate 1), type error (Gate 1), unused import (Gate 2). All fixed in 1 cycle. |
+| H7 | Skills are followed | Partially confirmed | 4/5. PM Gherkin not applied (continuation session, not fresh planning). |
+| H8 | Coverage gate | Confirmed | 73.91% > 65% floor. |
+| H9 | Lint gate | Confirmed | Planted unused import caught by lint gate. |
+
+**Experiment 2 result**: All 3 planted bugs caught by their intended gates, all correctly fixed in 1 cycle, all traced to planted commit `903939b`. H5, H8, H9 confirmed under adversarial conditions. See section 11.3.
+
 ## 8.2 Dappled Shade Sprint 0: Cross-Project Generalization
 
 Dappled Shade tests whether Flowstate generalizes beyond TypeScript CLI tools. It is a Rust P2P encrypted messaging application over Tor — maximally different from Uluka in language, domain, and threat model.
@@ -591,49 +625,44 @@ Note: Token and timing metrics unavailable — DS does not have a collect.sh. Fl
 
 ## 8.3 Cross-Project Comparison
 
-Eight sprints across two projects and two languages (plus 2 no-Flowstate baselines and 1 scope stress experiment). Cross-project patterns are now visible across multiple iterations.
+Eighteen sprints across three projects and three languages/frameworks (plus 2 no-Flowstate baselines and 4 falsification experiments).
 
 ### 8.3.1 Metrics comparison
 
 <!-- generated-from: python3 tools/generate_tables.py cross-project -->
-| | Uluka S0 | Uluka S1 | Uluka S2 | Uluka S3 | DS S0 | DS S1 | DS S6 (Exp 4) | Trend |
-|---|---|---|---|---|---|---|---|---|
-| Active session time | 17m 39s | 21m 51s | 10m 44s | 12m 37s | 37m 43s | 16m 3s | null | Both projects getting faster |
-| Total tokens | 9.4M | 8.4M | 6.1M | 6.9M | 16.8M | 9.2M | null | Decreasing on both |
-| New-work tokens | 287K | 197K | 211K | 83K | 630K | 274K | null | Improving efficiency |
-| Opus % (tokens) | 65.8% | 59.9% | 68.4% | 88.1% | 48.2% | 59.5% | 100% | Varies by sprint |
-| Sonnet % (tokens) | 34.2% | 40.1% | 19.2% | 9.3% | 49.9% | 40.5% | 0% | Dropping on Uluka |
-| Haiku % (tokens) | 0% | 0% | 12.4% | 2.7% | 1.9% | 0% | 0% | Used when appropriate |
-| Subagents | 3 | 3 | 3 | 3 (2S+1H) | 14 (retro) | 4 | null | Stabilizing |
-| API calls | 145 | 151 | 106 | 77 | 330 | 145 | null | Dropping on both |
-| Gates 1st pass | yes | yes | yes | no (lint) | no (clippy) | yes | yes | 6/8 clean; failures caught real bugs |
-| H7 compliance | 3/5 | 4/5 | 4.5/5 | **5/5** | 4/5 | 5/5 | 3/5 (blind) | Process audit inflates; code audit deflates |
-| LOC added | ~1,200 | ~2,542 | 826 | 890 | 3,268 | 1,135 | 2,652 | DS S6 = 2.5x avg |
-| Tokens/LOC (new-work) | ~239 | ~78 | ~256 | ~93 | ~193 | ~242 | null | Stable 78-256 range |
+| | Uluka S0 | Uluka S1 | Uluka S2 | Uluka S3 | Uluka S8 (Exp 2) | DS S0 | DS S1 | DS S6 (Exp 4) | WTD S1 | WTD S2 | Trend |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Active session time | 17m 39s | 21m 51s | 10m 44s | 12m 37s | 10m 28s | 37m 43s | 16m 3s | null | null | 22m 13s | Stabilizing 10-22m |
+| Total tokens | 9.4M | 8.4M | 6.1M | 6.9M | 4.2M | 16.8M | 9.2M | null | null | 12.9M | Decreasing |
+| New-work tokens | 287K | 197K | 211K | 83K | 212K | 630K | 274K | null | 527K | 531K | 83K-630K range |
+| Cache hit rate | — | — | — | — | 95.0% | 96.3% | 97.1% | — | 96.9% | 95.9% | 95-97% |
+| Opus % | 65.8% | 59.9% | 68.4% | 88.1% | 84.1% | 48.2% | 59.5% | 100% | — | 61.0% | Varies |
+| Sonnet % | 34.2% | 40.1% | 19.2% | 9.3% | 8.2% | 49.9% | 40.5% | 0% | — | 12.2% | — |
+| Haiku % | 0% | 0% | 12.4% | 2.7% | 7.7% | 1.9% | 0% | 0% | — | 26.8% | Used when appropriate |
+| Subagents | 3 | 3 | 3 | 3 | 2 | 14 | 4 | null | null | 7 | — |
+| Gates 1st pass | yes | yes | yes | no (lint) | no (planted) | no (clippy) | yes | yes | null | yes | Failures catch real bugs |
+| LOC added | ~1,200 | ~2,542 | 826 | 890 | 1,078 | 3,268 | 1,135 | 2,652 | null | 459 | — |
+| Tokens/LOC (new-work) | ~239 | ~78 | ~256 | ~93 | ~197 | ~193 | ~242 | null | null | ~1,157 | 78-256 typical (WTD S2 high: small LOC) |
 
 ### 8.3.2 What the data shows
 
 **Patterns confirmed across all conditions**:
-- 3-phase structure (H1): confirmed on 8 sprints across TS and Rust, including 2.5x scope stress (DS S6). Weakened by Exp 1 baselines for well-scoped single-module work, but holds for multi-module sprints.
-- Wave parallelism (H4): adapts to project structure — 3-4 agents for coupled TS, 14->6 agents for Rust as architecture stabilizes
-- 5-skill consensus (H2, H3): coherent output across CLI tools and crypto P2P, no contradictions. Weakened by Exp 1 (comparable quality without skills).
-- Skill compliance (H7): improved from 3/5 -> 5/5 over 7 sprints, but **Exp 3 revealed process-level auditing inflates scores**. Blind code review scored DS S6 at 3/5 vs self-assessed 8/10 (partial). H7 audit methodology upgraded to require code-level verification.
-- Skills generalize across languages (H12): confirmed on DS S1 — Sprint 0's amendments prevented repeat failures
-- Gates catch real issues (H5): confirmed on both projects. DS S0 clippy caught 3 bugs, Uluka S3 lint caught unused import.
+- 3-phase structure (H1): confirmed on 18 sprints across TS, Rust, and SvelteKit, including 2.5x scope stress (DS S6). Weakened by Exp 1 baselines for well-scoped single-module work, but holds for multi-module sprints.
+- Wave parallelism (H4): adapts to project structure — 3 agents for coupled TS, 14->4 for Rust, 7 for SvelteKit
+- 5-skill consensus (H2, H3): coherent output across CLI tools, crypto P2P, and E2EE web app. Weakened by Exp 1 (comparable quality without skills).
+- Skill compliance (H7): improved from 3/5 -> 5/5 over sprints, but **Exp 3 revealed process-level auditing inflates scores**. H7 audit methodology upgraded to require code-level verification.
+- Skills generalize across languages (H12): confirmed on DS S1 and WTD S1
+- Gates catch real issues (H5): confirmed on all 3 projects. Exp 2 adversarial test: 3/3 planted bugs caught. DS S0 clippy caught 3 bugs. Uluka S3 lint caught unused import.
 
-**Trends**:
-- Active session time is decreasing on both projects: Uluka 22m -> 11m -> 13m, DS 38m -> 16m
-- New-work tokens per accepted LOC is stable at 78-256 across all sprints — no dramatic trend, but consistently efficient
-- Haiku is established for mechanical tasks: confirmed on Uluka S2 and S3 (CLI wiring, config, docs)
-- Gate failures are rare but real: 2/8 sprints had first-pass failures, both caught genuine bugs (clippy lint, unused import). Gates earn their keep.
-- Agent count is stabilizing: 3 per sprint on Uluka, DS normalizing from 14 to 4
+**Key finding from experiments**:
+- **Gates are the strongest mechanism** (Exp 2). They catch bugs reliably, automatically, and without human intervention.
+- **Sprint structure earns its keep on multi-module work** (Exp 4: held at 2.5x scope) but adds 4-8x overhead for single-module tasks (Exp 1).
+- **Skills are marginal** — comparable quality without them (Exp 1), compliance hard to audit reliably (Exp 3).
 
 **Per-project stability status**:
-- **Uluka: STABLE** — 3/3 consecutive clean sprints (S1: 0 edits, S2: 1 minor threshold, S3: 0 edits). Skill set is frozen.
-- Dappled Shade: **2/3** (Sprint 1 and Sprint 6 had 0 skill file changes)
-- Cross-project: Rust-specific additions don't invalidate TS skills — they're additive, not contradictory
-
-**Subagent log discovery**: Uluka S3 investigation confirmed that subagent logs exist at `~/.claude/projects/{slug}/{session-id}/subagents/agent-{id}.jsonl`. They are NOT in the parent JSONL — they must be discovered and aggregated separately. The extract_metrics.py script now handles this. collect.sh should be updated to match.
+- **Uluka: STABLE** — 3/3 consecutive clean sprints. Skill set frozen.
+- **Dappled Shade: 2/3** — Sprint 1 and Sprint 6 had 0 skill file changes.
+- **Weaveto.do: 2/2** — On track for stable at 3/3.
 
 ## 9. Tokens per Accepted LOC
 
@@ -646,8 +675,10 @@ A diagnostic metric the skeptic review identified as conspicuously absent. Calcu
 | Uluka S1 | 8.4M | 197K | ~2,542 | ~3,305 | ~78 |
 | Uluka S2 | 6.1M | 211K | 826 | ~7,385 | ~256 |
 | Uluka S3 | 6.9M | 83K | 890 | ~7,753 | ~93 |
+| Uluka S8 | 4.2M | 212K | 1,078 | ~3,896 | ~197 |
 | DS S0 | 16.8M | 630K | 3,268 | ~5,141 | ~193 |
 | DS S1 | 9.2M | 274K | 1,135 | ~8,106 | ~242 |
+| WTD S2 | 12.9M | 531K | 459 | ~28,122 | ~1,157 |
 
 **Note**: Total tokens/LOC is misleading because cache reads dominate (96%+ hit rates). New-work tokens/LOC is more meaningful — it measures how many non-cached tokens are consumed per line of accepted code. New-work tokens/LOC is stable in the 78-256 range across all sprints — there is no dramatic improvement trend. The variation reflects milestone complexity, not workflow maturity.
 
@@ -704,9 +735,9 @@ Built one milestone on each project with raw Claude Code (no skills, no phases, 
 
 **Verdicts**: H1 weakened (3-phase adds overhead for well-scoped work), H7 partially falsified (comparable quality without skills), H2 weakened (skills not clearly necessary).
 
-#### Experiment 2: Adversarial Gate Test — PENDING
+#### Experiment 2: Adversarial Gate Test — COMPLETE
 
-Plant 3 bugs in Uluka, run normal Flowstate sprint, see if gates catch them. Targets H5, H8, H9. Independent of other experiments.
+Planted 3 bugs on Uluka's `exp-2-adversarial` branch (unused import, wrong confidence threshold, type error). Ran a normal Flowstate sprint (S8). All 3 caught by their intended gates (Gate 1 tests, Gate 2 lint, Gate 1 types), all fixed in 1 cycle, all traced to planted commit `903939b`. H5, H8, H9 confirmed under adversarial conditions.
 
 #### Experiment 3: Blind Compliance Scoring — COMPLETE (folded into Exp 4)
 
@@ -735,11 +766,11 @@ DS S6 combined M4 (Tor spike) + M5 (Matrix outbound bridge) — ~2.5x normal DS 
 | Experiment | Targets | Result | Flowstate implication |
 |-----------|---------|--------|----------------------|
 | Exp 1: No-Flowstate baseline | H1, H2, H7 | 4-8x faster, comparable quality | Overhead not justified for single-module work |
-| Exp 2: Adversarial gates | H5, H8, H9 | Pending | — |
+| Exp 2: Adversarial gates | H5, H8, H9 | 3/3 planted bugs caught, all fixed in 1 cycle | Gates are the strongest mechanism; H5, H8, H9 confirmed |
 | Exp 3: Blind scoring | H7 | Process audit misses code violations | H7 template upgraded to dual verification |
 | Exp 4: Scope stress | H1, H4 | Structure held at 2.5x scope | Flowstate earns its keep on multi-module sprints |
 
-Full experiment results: `temp/experiment-1-results.md`, `temp/experiment-3-4-results.md`.
+Full experiment results: `temp/experiment-1-results.md`, `temp/experiment-2-adversarial-gates.md`, `temp/experiment-3-4-results.md`.
 
 ### 11.4 Hypothesis cap
 

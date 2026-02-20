@@ -28,9 +28,15 @@ Read these files:
 - [project config / requirements -- adapt this list to your project]
 
 PHASE 1 -- THINK:
-Acting as a consensus agent with all 5 skill perspectives (PM, UX, Architect, Production Engineer, Security Auditor):
 
-0. FEASIBILITY CHECK (do this BEFORE planning):
+0. SCOPE CHECK (do this FIRST):
+   Read the roadmap phase for this sprint. Estimate: how many source files will be created or modified?
+   - If ≤5 files AND no new external dependencies: use LIGHT MODE.
+     Skip the consensus agent, skip Gherkin, skip wave planning.
+     Just list what you'll build, implement it directly, then run gates.
+   - If >5 files OR new external dependencies: use FULL MODE (continue below).
+
+   FEASIBILITY CHECK (both modes):
    - List every new external dependency this sprint requires (libraries, APIs, services)
    - For each: verify it exists in the registry, check version compatibility, confirm the API you need is available
    - Identify the single highest-risk technical task. Run a minimal spike (import, compile, call the API) to confirm it works
@@ -38,7 +44,10 @@ Acting as a consensus agent with all 5 skill perspectives (PM, UX, Architect, Pr
    - If the spike fails, revise the scope before proceeding
    - Confirm a formatter AND linter are configured as gates. If either is missing, set one up now before writing any code.
 
-1. Produce acceptance criteria (Gherkin format) for this sprint's scope:
+FULL MODE only (skip if light mode):
+
+1. Acting as a consensus agent with all 5 skill perspectives (PM, UX, Architect, Production Engineer, Security Auditor),
+   produce acceptance criteria (Gherkin format) for this sprint's scope:
    [describe requirements here]
    Every requirement must have at least one happy-path and one failure/edge-case scenario.
 
@@ -85,14 +94,18 @@ Run the retrospective for this sprint.
    - What failed, with evidence
    - Change proposals as diffs (if any). Must have at least one `- Before` / `+ After` block or explain why no changes are needed with evidence.
    - When proposing skill changes, prefer REMOVING or SIMPLIFYING instructions over adding new ones. Each added instruction reduces compliance with all others. Justify any addition by explaining why it's worth the cost.
+   - Skill relevance audit: review each skill file (.claude/skills/*.md). For each rule/instruction, classify as USED (influenced a decision — cite it) or UNUSED (not relevant this sprint). If a rule has been UNUSED for 4+ consecutive sprints (check prior retros at {FLOWSTATE}/retrospectives/), flag it as a STALE CANDIDATE for removal. Include removal proposals for stale candidates in the change proposals above.
 
-2. H7 audit: check these 5 skill instructions for compliance:
-   [list your 5 pre-selected instructions here]
-   For each instruction, verify TWO ways:
-   a. Process check: was the activity performed? (e.g., "security review ran")
-   b. Code check: read the new/modified source files and verify the code
-      actually follows the instruction. Quote file:line evidence for each.
-   If the process check passes but the code check fails, rate as NON-COMPLIANT.
+2. H7 audit: check these 3 fixed instructions for compliance.
+   These are mechanically verifiable — grep the new/modified source files for evidence.
+   a. TESTS EXIST: every new source file has a corresponding test file with ≥1 test.
+      PASS: test file exists and covers new code. FAIL: new source file with no tests.
+   b. NO SECURITY ANTI-PATTERNS: no eval(), new Function(), or unescaped template
+      literals in user-facing paths in new/modified code.
+      PASS: grep returns empty. FAIL: grep finds matches in non-test files.
+   c. COVERAGE DID NOT REGRESS: compare current coverage % to baseline.
+      PASS: coverage ≥ baseline. FAIL: coverage dropped.
+   For each, quote file:line evidence.
 
 3. Hypothesis results table:
    | # | Hypothesis | Result | Evidence |
@@ -116,10 +129,7 @@ Format the sanitized export as a markdown document starting with "# Flowstate Sa
    - Current git SHA
    - Test count, coverage %, lint error count
    - Gate commands and their current status (run each gate, record pass/fail)
-   - 5 H7 instructions to audit next sprint (pick from .claude/skills/, rotate from last sprint)
-     Each instruction must include a verification method:
-     - What to grep/check in new source files
-     - What PASS and FAIL look like (specific patterns, not just "was it done?")
+   - H7 audit uses the 3 fixed instructions (tests exist, no security anti-patterns, coverage not regressed) — no rotation needed
 
 7. Update docs/ROADMAP.md:
    - Mark this sprint's phase as done (strikethrough or checkmark)
@@ -140,7 +150,7 @@ Format the sanitized export as a markdown document starting with "# Flowstate Sa
        - At least H1, H5, H7 rows
        - At least one change proposal with - Before / + After diff (or explicit "no changes needed" with evidence)
    [ ] Sanitized export produced (starting with "# Flowstate Sanitized Sprint Export")
-   [ ] {FLOWSTATE}/metrics/baseline-sprint-{N+1}.md with SHA, tests, coverage, gates, 5 H7 instructions
+   [ ] {FLOWSTATE}/metrics/baseline-sprint-{N+1}.md with SHA, tests, coverage, gates
    [ ] {FLOWSTATE}/progress.md written (current state for next session)
    [ ] docs/ROADMAP.md updated (phase marked done, Current State refreshed)
    [ ] Sprint code committed

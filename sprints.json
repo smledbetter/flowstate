@@ -914,6 +914,127 @@
           "evidence": "H7 audit: (1) No console.* in client src/ \u2014 PASS (only a comment reference found). (2) Coverage >= 75% \u2014 PASS (390 tests). (3) Crypto waves serial \u2014 PASS (no crypto files modified, audit-only). (4) Acceptance criteria had happy+failure scenarios \u2014 PASS. (5) No new UI added \u2014 N/A (hardening sprint)."
         }
       ]
+    },
+    {
+      "project": "weaveto-do",
+      "sprint": 2,
+      "label": "WTD S2",
+      "phase": "M8.5 \u2014 UX & Accessibility Pass",
+      "metrics": {
+        "active_session_time_s": 1333,
+        "active_session_time_display": "22m 13s",
+        "total_tokens": 12938274,
+        "total_tokens_display": "12.9M",
+        "new_work_tokens": 531019,
+        "new_work_tokens_display": "531K",
+        "cache_hit_rate_pct": 95.9,
+        "opus_pct": 61.0,
+        "sonnet_pct": 12.2,
+        "haiku_pct": 26.8,
+        "subagents": 7,
+        "api_calls": 207,
+        "tests_total": 403,
+        "tests_added": 13,
+        "coverage_pct": null,
+        "lint_errors": 0,
+        "gates_first_pass": true,
+        "gates_first_pass_note": null,
+        "loc_added": 459,
+        "loc_added_approx": false,
+        "task_type": "feature",
+        "rework_rate": 2.1,
+        "judge_score": null,
+        "judge_blocked": null,
+        "judge_block_reason": null,
+        "coderabbit_issues": null,
+        "coderabbit_issues_valid": null,
+        "mutation_score_pct": null,
+        "delegation_ratio_pct": 39.0,
+        "orchestrator_tokens": 7886871,
+        "subagent_tokens": 5051403,
+        "context_compressions": 0
+      },
+      "hypotheses": [
+        {
+          "id": "H1",
+          "name": "3-phase sprint works across project types",
+          "result": "confirmed",
+          "evidence": "UX/accessibility sprint completed in 3-phase workflow. Think (consensus) \u2192 Execute (4 waves with parallel agents) \u2192 Ship. Gates passed first try. Different project type (UI/UX) vs Sprint 1 (security audit)."
+        },
+        {
+          "id": "H5",
+          "name": "Gates catch real issues",
+          "result": "confirmed",
+          "evidence": "E2E tests caught coach marks overlay blocking all room interactions (61 failures). Fixed with custom Playwright fixtures. svelte-check caught orphaned CSS selector (.theme-toggle-btn). Unit tests verified ARIA attributes."
+        },
+        {
+          "id": "H7",
+          "name": "Skills are followed by agents",
+          "result": "confirmed",
+          "evidence": "See retrospective for 5-instruction audit. All 5 compliant: TDD (tests written per module), no plaintext, model matching (haiku for mechanical, sonnet for logic), keyboard navigation (focus-visible), no GitHub milestone (N/A for UX sprint)."
+        }
+      ]
+    },
+    {
+      "project": "uluka",
+      "sprint": 8,
+      "label": "Sprint 8: Crypto Library Knowledge Base + Evidence Quality",
+      "phase": "Phase 21: Crypto Library Knowledge Base + Evidence Quality",
+      "metrics": {
+        "active_session_time_s": 628,
+        "active_session_time_display": "10m 28s",
+        "total_tokens": 4235119,
+        "total_tokens_display": "4.2M",
+        "new_work_tokens": 212482,
+        "new_work_tokens_display": "212K",
+        "cache_hit_rate_pct": 95.0,
+        "opus_pct": 84.1,
+        "sonnet_pct": 8.2,
+        "haiku_pct": 7.7,
+        "subagents": 2,
+        "subagent_note": "1 Explore (codebase research) + 1 Haiku (subagent from prior session)",
+        "api_calls": 79,
+        "rework_rate": 1.6,
+        "delegation_ratio_pct": 15.9,
+        "orchestrator_tokens": 3561869,
+        "subagent_tokens": 673250,
+        "context_compressions": 0,
+        "tests_total": 520,
+        "tests_added": 42,
+        "coverage_pct": 73.91,
+        "lint_errors": 0,
+        "gates_first_pass": false,
+        "gates_first_pass_note": "3 regressions from refactor commit: confidence threshold, .find() vs .some() type error, unused import",
+        "loc_added": 1078,
+        "loc_added_approx": false,
+        "task_type": "feature",
+        "judge_score": null,
+        "judge_blocked": null,
+        "judge_block_reason": null,
+        "coderabbit_issues": null,
+        "coderabbit_issues_valid": null,
+        "mutation_score_pct": null
+      },
+      "hypotheses": [
+        {
+          "id": "H1",
+          "name": "3-phase sprint works across project types",
+          "result": "confirmed",
+          "evidence": "8th consecutive sprint. Multi-session sprint with regression fix completed cleanly."
+        },
+        {
+          "id": "H5",
+          "name": "Gates catch real issues",
+          "result": "confirmed",
+          "evidence": "Gates caught 3 regressions from refactor commit: wrong threshold in confidence-booster, type error in verification-engine, unused import in verify.ts. All would have been silent bugs without gates."
+        },
+        {
+          "id": "H7",
+          "name": "Skills are followed by agents",
+          "result": "partially_confirmed",
+          "evidence": "4/5 H7 instructions complied. PM Gherkin not applied (sprint was a continuation/fix session, not fresh planning). All other skills followed."
+        }
+      ]
     }
   ]
 }

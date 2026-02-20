@@ -274,6 +274,10 @@ The human can: approve, modify, or reject each change individually. Rejected cha
 
 The human decides. The default for ambiguous cases is **keep** — it's cheaper to carry a few extra lines than to remove a guardrail that was working.
 
+**H7 audit simplification**: the original H7 audit rotated 5 skill instructions per sprint and checked compliance via process + code verification. Experiments 1-4 showed this was the weakest mechanism — agents comply 70-80%, audits catch violations inconsistently (Exp 3: process audit missed 6 code-level violations), and subjective instructions like "Gherkin format" and "single responsibility" are hard to verify mechanically. The H7 audit now uses 3 fixed, mechanically verifiable checks: (a) tests exist for new code, (b) no security anti-patterns in new code, (c) coverage did not regress. These align with the proven gate mechanisms (Exp 2: 3/3 planted bugs caught).
+
+**Light mode**: Experiment 1 showed the full planning process (consensus agent, Gherkin, wave planning) adds ~4x overhead for small, well-scoped tasks (≤3 files, no new dependencies). The sprint template now includes a scope check: small sprints skip the planning ceremony and go straight to implementation. Gates are mandatory regardless of mode.
+
 ## 5. System Architecture
 
 ### 5.1 Project Structure
@@ -498,10 +502,11 @@ These are not yet implemented as Claude Code skill files. Currently, sprints are
 
 Flowstate is validated through hypothesis-driven sprints across multiple projects. All experiment designs, hypothesis definitions, test protocols, sprint results, and cross-project analysis are documented in [RESULTS.md](RESULTS.md).
 
-**Current state** (as of 7 sprints across 2 projects):
-- 12 hypotheses tested (H1-H12), none falsified, H5 confirmed on both projects (Uluka S3 lint gate caught unused import, DS S0 clippy caught 3 bugs)
-- Projects: Uluka (TypeScript CLI, 4 sprints), Dappled Shade (Rust P2P, 2 sprints)
-- Per-project stability: **Uluka STABLE** (3/3 clean sprints), Dappled Shade 1/3
+**Current state** (v1, 18 sprints across 3 projects):
+- 12 hypotheses tested (H1-H12), 4 falsification experiments completed
+- Projects: Uluka (TypeScript CLI, 9 sprints), Dappled Shade (Rust P2P, 3 sprints), Weaveto.do (SvelteKit E2EE, 2 sprints)
+- Per-project stability: **Uluka STABLE** (3/3 clean), DS 2/3, WTD 2/2
+- Key finding: gates are the strongest mechanism (Exp 2: 3/3 planted bugs caught). Sprint structure earns its keep on multi-module work (Exp 4) but adds overhead for small tasks (Exp 1: 4-8x slower)
 
 ## 9. Tiered Portability
 

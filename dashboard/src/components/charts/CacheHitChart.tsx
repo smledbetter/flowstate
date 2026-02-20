@@ -15,7 +15,7 @@ import type { DerivedSprint } from '@/types/sprint';
 import { BENCHMARKS, movingAverage } from '@/lib/compute';
 
 export function CacheHitChart({ sprints }: { sprints: DerivedSprint[] }) {
-  const filtered = sprints.filter((s) => s.metrics.cache_hit_rate_pct !== null);
+  const filtered = sprints.filter((s) => typeof s.metrics.cache_hit_rate_pct === 'number');
   const values = filtered.map((s) => s.metrics.cache_hit_rate_pct);
   const ma = movingAverage(values, 3);
 

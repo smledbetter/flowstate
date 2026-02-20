@@ -14,9 +14,10 @@ Creates everything needed for Sprint 0 with zero prompts.
 
 Creates:
     ~/.flowstate/{slug}/           (flowstate.config.md, metrics/, retrospectives/)
-    ~/.flowstate/{slug}/metrics/collect.sh  (Tier 1 only)
+    ~/.flowstate/{slug}/metrics/collect.sh  (Tier 1 only, legacy — MCP tools preferred)
     ~/.flowstate/hypotheses.json   (shared registry, if not already present)
     .claude/skills/                (5 generic skill files)
+    .claude/commands/              (slash commands: /sprint, /ship)
     CLAUDE.md                      (generated sprint workflow, tier-specific)
 """
 
@@ -300,7 +301,7 @@ This project uses the Flowstate sprint process. When asked to "start the next sp
 - **Baselines**: `~/.flowstate/{slug}/metrics/baseline-sprint-N.md`
 - **Retrospectives**: `~/.flowstate/{slug}/retrospectives/sprint-N.md`
 - **Metrics**: `~/.flowstate/{slug}/metrics/`
-- **collect.sh**: `~/.flowstate/{slug}/metrics/collect.sh`
+- **Metrics collection**: Use `mcp__flowstate__collect_metrics` MCP tool (or legacy `~/.flowstate/{slug}/metrics/collect.sh`)
 - **Progress**: `~/.flowstate/{slug}/progress.md` (operational state for next session)
 - **Roadmap**: `docs/ROADMAP.md` (in this repo -- create if missing)
 - **Skills**: `.claude/skills/` (in this repo)
@@ -403,19 +404,14 @@ When all gates pass, say: "Ready for Phase 3: SHIP whenever you want to proceed.
 
 ### Phase 3: SHIP
 
-1. **Collect metrics** (run from this project directory):
-   - Find the timestamp of the previous sprint's last commit:
-     `git log --format='%aI %s' | head -5`
-     The boundary is the timestamp of the last commit BEFORE this sprint's work.
-   - ALWAYS use --after to isolate this sprint's metrics (even if you think this is the only sprint in the session):
-     `bash ~/.flowstate/{slug}/metrics/collect.sh --after <BOUNDARY> <SESSION_ID>`
-     Save to `~/.flowstate/{slug}/metrics/sprint-N-report.txt`
-   - JSON (same --after flag):
-     `bash ~/.flowstate/{slug}/metrics/collect.sh --json --after <BOUNDARY> <SESSION_ID>`
-     Save to `~/.flowstate/{slug}/metrics/sprint-N-report.json`
+1. **Collect metrics** using Flowstate MCP tools:
+   - Call `mcp__flowstate__sprint_boundary` with project_path and sprint_marker to find the boundary timestamp
+   - Call `mcp__flowstate__list_sessions` with project_path to find the session ID(s) for this sprint
+   - Call `mcp__flowstate__collect_metrics` with project_path, session_ids, and the boundary timestamp as "after"
+   - Save the raw metrics response to `~/.flowstate/{slug}/metrics/sprint-N-metrics.json`
 
 2. **Write import JSON** at `~/.flowstate/{slug}/metrics/sprint-N-import.json`:
-   - Start from the JSON report (`sprint-N-report.json`) as the base
+   - Start from the MCP metrics response (`sprint-N-metrics.json`) as the base
    - Add these fields:
      ```json
      {{
@@ -424,7 +420,7 @@ When all gates pass, say: "Ready for Phase 3: SHIP whenever you want to proceed.
        "label": {label_example},
        "phase": "[phase name from roadmap]",
        "metrics": {{
-         "...everything from sprint-N-report.json...",
+         "...everything from sprint-N-metrics.json...",
          "tests_total": "<current test count>",
          "tests_added": "<tests added this sprint>",
          "coverage_pct": "<current coverage % or null>",
@@ -434,7 +430,7 @@ When all gates pass, say: "Ready for Phase 3: SHIP whenever you want to proceed.
          "loc_added": "<LOC from git diff --stat>",
          "loc_added_approx": false,
          "task_type": "<feature|bugfix|refactor|infra|planning|hardening>",
-         "rework_rate": "<from sprint-N-report.json, or null>",
+         "rework_rate": "<from sprint-N-metrics.json, or null>",
          "judge_score": "<[scope, test_quality, gate_integrity, convention, diff_hygiene] 1-5 each, or null>",
          "judge_blocked": "<true if judge prevented stopping, false otherwise, or null>",
          "judge_block_reason": "<reason string if blocked, or null>",
@@ -452,7 +448,7 @@ When all gates pass, say: "Ready for Phase 3: SHIP whenever you want to proceed.
      }}
      ```
    - The schema matches `sprints.json` entries exactly -- same field names, same types
-   - Validate: `python3 ~/Sites/Flowstate/tools/import_sprint.py --from --dry-run ~/.flowstate/{slug}/metrics/sprint-N-import.json`
+   - Validate: call `mcp__flowstate__import_sprint` with dry_run=true
    - Fix any errors before proceeding. Warnings (auto-corrections) are ok.
 
 3. **Write retrospective** at `~/.flowstate/{slug}/retrospectives/sprint-N.md`:
@@ -483,9 +479,8 @@ When all gates pass, say: "Ready for Phase 3: SHIP whenever you want to proceed.
    This is operational state for the next agent session, not analysis. Overwrite any previous progress.md.
 
 9. **Completion check** -- print this checklist with [x] or [MISSING] for each:
-   - metrics/sprint-N-report.txt exists
-   - metrics/sprint-N-report.json exists
-   - metrics/sprint-N-import.json exists (complete import-ready JSON)
+   - metrics/sprint-N-metrics.json exists (raw MCP metrics response)
+   - metrics/sprint-N-import.json exists (complete import-ready JSON, validated via MCP dry_run)
    - retrospectives/sprint-N.md has hypothesis table (H1, H5, H7) and change proposals
    - metrics/baseline-sprint-{{N+1}}.md exists with SHA, tests, coverage, gates, H7 instructions
    - progress.md written (current state for next session)
@@ -810,6 +805,22 @@ def main():
         f.write(claude_md)
     print(f"    CLAUDE.md")
 
+    # --- Deploy slash commands ---
+    commands_src = os.path.join(FLOWSTATE_REPO, "commands")
+    commands_dst = os.path.join(project_dir, ".claude", "commands")
+    os.makedirs(commands_dst, exist_ok=True)
+    cmd_count = 0
+    for fname in sorted(os.listdir(commands_src)):
+        if fname.endswith(".md"):
+            with open(os.path.join(commands_src, fname)) as f:
+                content = f.read()
+            # Substitute project slug
+            content = content.replace("{SLUG}", slug)
+            with open(os.path.join(commands_dst, fname), "w") as f:
+                f.write(content)
+            cmd_count += 1
+    print(f"    .claude/commands/ ({cmd_count} commands: /sprint, /ship)")
+
     # --- Generate .claude/settings.json (LLM-as-judge Stop hook) ---
     settings_path = os.path.join(project_dir, ".claude", "settings.json")
     if not os.path.exists(settings_path):
@@ -822,9 +833,10 @@ def main():
 
     # --- Summary ---
     print(
-        f"\n  Done. Next: open a fresh Claude Code session and say 'start the next sprint'."
+        f"\n  Done. Next: open a fresh Claude Code session and run /sprint."
     )
-    print(f"  The agent will read the PRD, create the roadmap, and run Sprint 0.\n")
+    print(f"  The agent will read the PRD, create the roadmap, and run Sprint 0.")
+    print(f"  After gates pass, run /ship for Phase 3.\n")
 
     if not language:
         print(
