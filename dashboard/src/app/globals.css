@@ -10,3 +10,92 @@ body {
 ::selection {
   background: #38bdf855;
 }
+
+/* Prose styling for written summary pages */
+.prose-flowstate h2 {
+  @apply text-xl font-semibold text-white mt-10 mb-4 pb-2 border-b border-border;
+}
+
+.prose-flowstate h3 {
+  @apply text-lg font-medium text-white mt-8 mb-3;
+}
+
+.prose-flowstate p {
+  @apply text-gray-300 leading-relaxed mb-4;
+}
+
+.prose-flowstate ul {
+  @apply list-disc list-outside ml-5 mb-4 space-y-1.5;
+}
+
+.prose-flowstate li {
+  @apply text-gray-300 leading-relaxed;
+}
+
+.prose-flowstate strong {
+  @apply text-white font-semibold;
+}
+
+.prose-flowstate a {
+  @apply text-uluka hover:underline;
+}
+
+.prose-flowstate blockquote {
+  @apply border-l-2 border-uluka/40 pl-4 my-4 text-gray-400 italic;
+}
+
+.prose-flowstate table {
+  @apply w-full text-sm mb-6;
+}
+
+.prose-flowstate thead th {
+  @apply text-left text-gray-400 font-medium pb-2 border-b border-border px-3 py-2;
+}
+
+.prose-flowstate tbody td {
+  @apply text-gray-300 border-b border-border/50 px-3 py-2;
+}
+
+.prose-flowstate tbody tr:hover {
+  @apply bg-white/[0.02];
+}
+
+.prose-flowstate code {
+  @apply font-mono text-sm bg-white/5 px-1.5 py-0.5 rounded text-uluka;
+}
+
+.prose-flowstate .callout {
+  @apply bg-card border border-border rounded-lg p-5 my-6;
+}
+
+.prose-flowstate .callout-title {
+  @apply text-sm font-semibold text-white mb-2 flex items-center gap-2;
+}
+
+.prose-flowstate .callout p {
+  @apply text-sm text-gray-400 mb-0;
+}
+
+.prose-flowstate .citation {
+  @apply text-xs text-gray-500 font-mono;
+}
+
+.prose-flowstate .metric-inline {
+  @apply font-mono text-sm font-semibold;
+}
+
+.prose-flowstate .tag {
+  @apply inline-block px-2 py-0.5 rounded text-xs font-medium;
+}
+
+.prose-flowstate .tag-confirmed {
+  @apply bg-confirmed/10 text-confirmed;
+}
+
+.prose-flowstate .tag-partial {
+  @apply bg-partial/10 text-partial;
+}
+
+.prose-flowstate .tag-falsified {
+  @apply bg-falsified/10 text-falsified;
+}
