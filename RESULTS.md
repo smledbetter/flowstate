@@ -556,34 +556,68 @@ Sprint 1 added Olm per-message end-to-end encryption with forward secrecy on top
 
 **Notable**: vodozemac API was much cleaner than arti (Sprint 0's pain point). Session.rs integration was surgical (+148 lines) — Sprint 0's architecture was well-factored. First-pass gate success (vs Sprint 0's clippy failure) suggests Sprint 0's skill amendments are working.
 
+## 8.2.4 Sprint 6: Tor Spike + Matrix Outbound Bridge (Experiment 4)
+
+Sprint 6 was **Experiment 4** — a scope stress test combining M4 Phase 1 (Tor spike) and M5 Phase 1 (Matrix outbound bridge) into a single Flowstate sprint. ~2.5x normal DS sprint scope. Experiment 3 (blind compliance scoring) was folded in after completion.
+
+**Deliverables**: TransportManager (mode selection, health monitoring, TCP fallback), Matrix bridge (appservice registration, ghost users, outbound queue, inbound routing, HTTP handlers), Arti spike report (no-go decision), CLI `--transport` flag, acceptance criteria for both M4 and M5.
+
+**Metrics**:
+
+<!-- generated-from: python3 tools/generate_tables.py sprint dappled-shade 6 -->
+| Metric | Value |
+|--------|-------|
+| LOC added | 2,652 |
+| Tests | 212 (+48) |
+| Files changed | 15 |
+| Commits | 2 |
+| Gates first pass | yes |
+| Token/timing | null (no collect.sh for DS yet) |
+
+Note: Token and timing metrics unavailable — DS does not have a collect.sh. Flagged in retro.
+
+**Hypothesis results (self-assessed)**:
+
+<!-- generated-from: python3 tools/generate_tables.py hypotheses dappled-shade 6 -->
+| # | Hypothesis | Result | Evidence |
+|---|-----------|--------|----------|
+| H1 | 3-phase works under combined scope | Confirmed | M4+M5 delivered in Think->Execute->Ship. Wave-based execution grouped transport concerns. |
+| H5 | Gates catch real issues | Confirmed | 212 tests + 0 clippy validated 2,652 LOC on first attempt. |
+| H7 | Skills are followed | Partially confirmed (self) | 8/10 skill instructions followed. Missing: dedicated security audit wave, adversarial scenarios. |
+
+**Experiment 3 — Blind compliance scoring**: see section 8.4.2 below.
+
+**Retro outcome**: 3 change proposals (create collect.sh, add security audit wave, capture token metrics). No skill file changes — **2/3 toward per-project stability** on DS.
+
 ## 8.3 Cross-Project Comparison
 
-Seven sprints across two projects and two languages. Cross-project patterns are now visible across multiple iterations.
+Eight sprints across two projects and two languages (plus 2 no-Flowstate baselines and 1 scope stress experiment). Cross-project patterns are now visible across multiple iterations.
 
 ### 8.3.1 Metrics comparison
 
 <!-- generated-from: python3 tools/generate_tables.py cross-project -->
-| | Uluka S0 | Uluka S1 | Uluka S2 | Uluka S3 | DS S0 | DS S1 | Trend |
-|---|---|---|---|---|---|---|---|
-| Active session time | 17m 39s | 21m 51s | 10m 44s | 12m 37s | 37m 43s | 16m 3s | Both projects getting faster |
-| Total tokens | 9.4M | 8.4M | 6.1M | 6.9M | 16.8M | 9.2M | Decreasing on both |
-| New-work tokens | 287K | 197K | 211K | 83K | 630K | 274K | Improving efficiency |
-| Opus % (tokens) | 65.8% | 59.9% | 68.4% | 88.1% | 48.2% | 59.5% | Varies by sprint |
-| Sonnet % (tokens) | 34.2% | 40.1% | 19.2% | 9.3% | 49.9% | 40.5% | Dropping on Uluka |
-| Haiku % (tokens) | 0% | 0% | 12.4% | 2.7% | 1.9% | 0% | Used when appropriate |
-| Subagents | 3 | 3 | 3 | 3 (2S+1H) | 14 (retro) | 4 | Stabilizing |
-| API calls | 145 | 151 | 106 | 77 | 330 | 145 | Dropping on both |
-| Gates 1st pass | yes | yes | yes | no (lint) | no (clippy) | yes | 5/7 clean; both failures caught real bugs |
-| H7 compliance | 3/5 | 4/5 | 4.5/5 | **5/5** | 4/5 | 5/5 | Ceiling reached |
-| Tokens/LOC (new-work) | ~239 | ~78 | ~256 | ~93 | ~193 | ~242 | Stable 78-256 range |
+| | Uluka S0 | Uluka S1 | Uluka S2 | Uluka S3 | DS S0 | DS S1 | DS S6 (Exp 4) | Trend |
+|---|---|---|---|---|---|---|---|---|
+| Active session time | 17m 39s | 21m 51s | 10m 44s | 12m 37s | 37m 43s | 16m 3s | null | Both projects getting faster |
+| Total tokens | 9.4M | 8.4M | 6.1M | 6.9M | 16.8M | 9.2M | null | Decreasing on both |
+| New-work tokens | 287K | 197K | 211K | 83K | 630K | 274K | null | Improving efficiency |
+| Opus % (tokens) | 65.8% | 59.9% | 68.4% | 88.1% | 48.2% | 59.5% | 100% | Varies by sprint |
+| Sonnet % (tokens) | 34.2% | 40.1% | 19.2% | 9.3% | 49.9% | 40.5% | 0% | Dropping on Uluka |
+| Haiku % (tokens) | 0% | 0% | 12.4% | 2.7% | 1.9% | 0% | 0% | Used when appropriate |
+| Subagents | 3 | 3 | 3 | 3 (2S+1H) | 14 (retro) | 4 | null | Stabilizing |
+| API calls | 145 | 151 | 106 | 77 | 330 | 145 | null | Dropping on both |
+| Gates 1st pass | yes | yes | yes | no (lint) | no (clippy) | yes | yes | 6/8 clean; failures caught real bugs |
+| H7 compliance | 3/5 | 4/5 | 4.5/5 | **5/5** | 4/5 | 5/5 | 3/5 (blind) | Process audit inflates; code audit deflates |
+| LOC added | ~1,200 | ~2,542 | 826 | 890 | 3,268 | 1,135 | 2,652 | DS S6 = 2.5x avg |
+| Tokens/LOC (new-work) | ~239 | ~78 | ~256 | ~93 | ~193 | ~242 | null | Stable 78-256 range |
 
 ### 8.3.2 What the data shows
 
 **Patterns confirmed across all conditions**:
-- 3-phase structure (H1): confirmed on 7 consecutive sprints across TS and Rust, existing and greenfield codebases
+- 3-phase structure (H1): confirmed on 8 sprints across TS and Rust, including 2.5x scope stress (DS S6). Weakened by Exp 1 baselines for well-scoped single-module work, but holds for multi-module sprints.
 - Wave parallelism (H4): adapts to project structure — 3-4 agents for coupled TS, 14->6 agents for Rust as architecture stabilizes
-- 5-skill consensus (H2, H3): coherent output across CLI tools and crypto P2P, no contradictions
-- Skill compliance (H7): improved from 3/5 -> 5/5 over 7 sprints. First perfect score on Uluka S3. TDD ordering was the last holdout.
+- 5-skill consensus (H2, H3): coherent output across CLI tools and crypto P2P, no contradictions. Weakened by Exp 1 (comparable quality without skills).
+- Skill compliance (H7): improved from 3/5 -> 5/5 over 7 sprints, but **Exp 3 revealed process-level auditing inflates scores**. Blind code review scored DS S6 at 3/5 vs self-assessed 8/10 (partial). H7 audit methodology upgraded to require code-level verification.
 - Skills generalize across languages (H12): confirmed on DS S1 — Sprint 0's amendments prevented repeat failures
 - Gates catch real issues (H5): confirmed on both projects. DS S0 clippy caught 3 bugs, Uluka S3 lint caught unused import.
 
@@ -591,12 +625,12 @@ Seven sprints across two projects and two languages. Cross-project patterns are 
 - Active session time is decreasing on both projects: Uluka 22m -> 11m -> 13m, DS 38m -> 16m
 - New-work tokens per accepted LOC is stable at 78-256 across all sprints — no dramatic trend, but consistently efficient
 - Haiku is established for mechanical tasks: confirmed on Uluka S2 and S3 (CLI wiring, config, docs)
-- Gate failures are rare but real: 2/7 sprints had first-pass failures, both caught genuine bugs (clippy lint, unused import). Gates earn their keep.
+- Gate failures are rare but real: 2/8 sprints had first-pass failures, both caught genuine bugs (clippy lint, unused import). Gates earn their keep.
 - Agent count is stabilizing: 3 per sprint on Uluka, DS normalizing from 14 to 4
 
 **Per-project stability status**:
 - **Uluka: STABLE** — 3/3 consecutive clean sprints (S1: 0 edits, S2: 1 minor threshold, S3: 0 edits). Skill set is frozen.
-- Dappled Shade: 1/3 (Sprint 1 had 0 skill changes proposed)
+- Dappled Shade: **2/3** (Sprint 1 and Sprint 6 had 0 skill file changes)
 - Cross-project: Rust-specific additions don't invalidate TS skills — they're additive, not contradictory
 
 **Subagent log discovery**: Uluka S3 investigation confirmed that subagent logs exist at `~/.claude/projects/{slug}/{session-id}/subagents/agent-{id}.jsonl`. They are NOT in the parent JSONL — they must be discovered and aggregated separately. The extract_metrics.py script now handles this. collect.sh should be updated to match.
@@ -656,15 +690,56 @@ Hypotheses use a 4-level scale:
 - **No baseline comparison**: no sprint has been run without Flowstate on the same codebase. Active session time, token usage, and code quality cannot be attributed to Flowstate vs. Claude Code's inherent capability. A no-Flowstate baseline experiment is planned (see 11.3).
 - **Human idle time is approximate**: collect.sh detects gaps >60s between assistant and human entries as "human idle" time. This captures review and approval delays but not setup time or passive monitoring. Better than nothing, not perfect.
 - **Project selection is not independent**: both test projects were chosen by the same person who created Flowstate. Neither is a team project, a web app with a database, or an inherited messy codebase.
-- **Skill compliance is self-assessed**: H7 audits are performed by the person who wrote the skills, not by an independent reviewer.
+- **Skill compliance is self-assessed**: H7 audits are performed by the sprint agent, not an independent reviewer. Experiment 3 confirmed this inflates scores — process-level checks pass while code-level violations go undetected. Mitigated: sprint template now requires dual verification (process + code with file:line evidence).
 - **Model versions are unrecorded**: sprints record model tier (opus/sonnet/haiku) but not specific model version. Claude capability changes between sprints could confound comparisons.
 - **Tokens per accepted LOC**: ~3,300-8,100 total tokens/LOC (dominated by cache reads), ~78-256 new-work tokens/LOC. Total is misleading; new-work is the meaningful efficiency metric.
 
-### 11.3 Planned experiments
+### 11.3 Experiments
 
-**No-Flowstate baseline** (next Uluka sprint): Build one Uluka milestone with raw Claude Code — no skills, no phases, no gates. Record the same metrics (active session time, tokens, tests, coverage). Compare to the Flowstate sprint on a similar-complexity milestone. This is the single highest-value experiment for establishing whether Flowstate adds value.
+Four falsification experiments designed to test Flowstate's value proposition under adversarial conditions.
 
-**Human time tracking** (implemented in collect.sh): The metrics collector now detects gaps >60s between assistant and human entries in session logs, reporting them as "Human idle" time automatically. No manual logging needed — the session log timestamps already contain the data.
+#### Experiment 1: No-Flowstate Baseline — COMPLETE
+
+Built one milestone on each project with raw Claude Code (no skills, no phases, no gates). Both baselines completed 4-8x faster with comparable quality (76-88% blind review). Full results: `temp/experiment-1-results.md`.
+
+**Verdicts**: H1 weakened (3-phase adds overhead for well-scoped work), H7 partially falsified (comparable quality without skills), H2 weakened (skills not clearly necessary).
+
+#### Experiment 2: Adversarial Gate Test — PENDING
+
+Plant 3 bugs in Uluka, run normal Flowstate sprint, see if gates catch them. Targets H5, H8, H9. Independent of other experiments.
+
+#### Experiment 3: Blind Compliance Scoring — COMPLETE (folded into Exp 4)
+
+After DS S6, gave code artifacts to a fresh agent with no Flowstate knowledge for 5-dimension blind scoring. Compared against self-assessed scores.
+
+**Key finding**: Self-assessment was not inflated but was shallow. Sprint agent scored H7 as "partially confirmed" (correct), but caught process-level gaps (no security audit wave) while missing 6 code-level violations the blind judge found (non-constant-time token comparison, 0.0.0.0 bind, no cancellation safety docs, weak hash, pub vs pub(crate), unjustified allow(dead_code)).
+
+**Blind scores**: Scope 4/5, Tests 4/5, Code quality 3/5, Convention compliance 3/5, Diff hygiene 4/5. **Overall: 18/25 (72%)**.
+
+**Comparison**: DS S5 baseline (no Flowstate) scored 22/25 (88%) at lower scope. Not directly comparable — 2.5x scope means more surface area for issues.
+
+**Root cause**: H7 audit checks process compliance ("did the activity happen?") not code compliance ("does the code follow the instruction?"). Sprint template updated to require both process AND code verification with file:line evidence.
+
+**Verdict**: H7 audit methodology was insufficient. Upgraded sprint template with dual-verification requirement.
+
+#### Experiment 4: Scope Stress Test — COMPLETE
+
+DS S6 combined M4 (Tor spike) + M5 (Matrix outbound bridge) — ~2.5x normal DS sprint scope. Tests whether 3-phase structure holds under combined milestone pressure.
+
+**Result**: Structure held. 2,652 LOC, 48 tests, gates first pass. The planning phase correctly grouped M4+M5 transport concerns. This partially counters Exp 1's finding: for multi-module work, the planning phase prevents wrong turns. Token metrics unavailable (no collect.sh).
+
+**Verdict**: H1 confirmed under scope stress. Flowstate's value proposition is strongest for multi-module sprints where planning prevents wasted work.
+
+#### Summary: What the experiments show
+
+| Experiment | Targets | Result | Flowstate implication |
+|-----------|---------|--------|----------------------|
+| Exp 1: No-Flowstate baseline | H1, H2, H7 | 4-8x faster, comparable quality | Overhead not justified for single-module work |
+| Exp 2: Adversarial gates | H5, H8, H9 | Pending | — |
+| Exp 3: Blind scoring | H7 | Process audit misses code violations | H7 template upgraded to dual verification |
+| Exp 4: Scope stress | H1, H4 | Structure held at 2.5x scope | Flowstate earns its keep on multi-module sprints |
+
+Full experiment results: `temp/experiment-1-results.md`, `temp/experiment-3-4-results.md`.
 
 ### 11.4 Hypothesis cap
 

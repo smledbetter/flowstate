@@ -25,51 +25,55 @@ export function HypothesisHeatmap({ sprints, hypotheses, compact }: Props) {
   const displayIds = compact ? hIds.filter((id) => lookup[id]) : hIds;
 
   return (
-    <div className="overflow-x-auto">
-      <div
-        className="grid gap-px bg-border"
-        style={{
-          gridTemplateColumns: `160px repeat(${sprints.length}, minmax(56px, 1fr))`,
-        }}
-      >
-        {/* Header row */}
-        <div className="bg-bg p-2 text-xs text-gray-500" />
-        {sprints.map((s) => (
-          <div
-            key={s.label}
-            className="bg-bg p-2 text-xs text-gray-400 text-center truncate"
-          >
-            {s.label}
-          </div>
-        ))}
-
-        {/* Hypothesis rows */}
-        {displayIds.map((hId) => (
-          <>
-            <div key={`label-${hId}`} className="bg-card p-2 text-xs text-gray-300 truncate">
-              {hId}: {hypotheses[hId]}
-            </div>
-            {sprints.map((s) => {
-              const result = lookup[hId]?.[s.label];
-              return (
-                <div
-                  key={`${hId}-${s.label}`}
-                  className="bg-card p-2 flex items-center justify-center"
-                  title={result ? resultLabel(result) : 'Not tested'}
+    <div className="relative">
+      {/* Scrollable container — labels stick left, data scrolls */}
+      <div className="overflow-x-auto">
+        <table className="border-separate" style={{ borderSpacing: '1px' }}>
+          <thead>
+            <tr>
+              <th
+                className="sticky left-0 z-10 bg-bg p-2 text-xs text-gray-500 text-left font-normal"
+                style={{ minWidth: '340px', maxWidth: '400px' }}
+              />
+              {sprints.map((s) => (
+                <th
+                  key={s.label}
+                  className="bg-bg p-2 text-xs text-gray-400 text-center font-normal whitespace-nowrap"
+                  style={{ minWidth: '48px' }}
                 >
-                  {result ? (
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: resultColor(result) }}
-                    />
-                  ) : (
-                    <div className="w-3 h-3 rounded-full bg-gray-800" />
-                  )}
-                </div>
-              );
-            })}
-          </>
-        ))}
+                  {s.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {displayIds.map((hId) => (
+              <tr key={hId}>
+                <td
+                  className="sticky left-0 z-10 bg-card p-2 text-xs text-gray-300"
+                  style={{ minWidth: '340px', maxWidth: '400px' }}
+                >
+                  <span className="text-gray-500">{hId}:</span> {hypotheses[hId]}
+                </td>
+                {sprints.map((s) => {
+                  const result = lookup[hId]?.[s.label];
+                  return (
+                    <td
+                      key={`${hId}-${s.label}`}
+                      className="bg-card p-2 text-center"
+                      title={result ? resultLabel(result) : 'Not tested'}
+                    >
+                      <div
+                        className={`w-3 h-3 rounded-full mx-auto ${!result ? 'bg-gray-800' : ''}`}
+                        style={result ? { backgroundColor: resultColor(result) } : undefined}
+                      />
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {/* Legend */}

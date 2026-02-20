@@ -145,6 +145,11 @@ Run the Phase 3 retrospective for Sprint N.
    - What failed, with evidence
    - H7 audit: check these 5 skill instructions for compliance:
      [list 5 pre-selected instructions from baseline]
+     For each instruction, verify TWO ways:
+     a. Process check: was the activity performed? (e.g., "security review ran")
+     b. Code check: read the new/modified source files and verify the code
+        actually follows the instruction. Quote file:line evidence for each.
+     If the process check passes but the code check fails, rate as NON-COMPLIANT.
 
 4. Hypothesis results table:
    | # | Hypothesis | Result | Evidence |
@@ -162,6 +167,9 @@ Run the Phase 3 retrospective for Sprint N.
    - Test count, coverage %, lint error count
    - Gate commands and their current status (run each gate, record pass/fail)
    - 5 H7 instructions to audit next sprint (pick from .claude/skills/, rotate from last sprint)
+     Each instruction must include a verification method:
+     - What to grep/check in new source files
+     - What PASS and FAIL look like (specific patterns, not just "was it done?")
 
 8. Update docs/ROADMAP.md:
    - Mark this sprint's phase as done (strikethrough or checkmark)

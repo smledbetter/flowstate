@@ -793,6 +793,127 @@
         "total": 22,
         "total_pct": 88
       }
+    },
+    {
+      "project": "dappled-shade",
+      "sprint": 6,
+      "label": "DS S6",
+      "phase": "M4 Phase 1 + M5 Phase 1: Tor spike + Matrix outbound bridge",
+      "metrics": {
+        "commits": 2,
+        "files_changed": 15,
+        "first_commit": "2026-02-19T16:39:29-05:00",
+        "last_commit": "2026-02-19T16:44:43-05:00",
+        "tests_total": 212,
+        "tests_added": 48,
+        "coverage_pct": null,
+        "lint_errors": 0,
+        "gates_first_pass": true,
+        "gates_first_pass_note": null,
+        "loc_added": 2652,
+        "loc_added_approx": false,
+        "task_type": "feature",
+        "active_session_time_s": null,
+        "active_session_time_display": null,
+        "total_tokens": null,
+        "total_tokens_display": null,
+        "new_work_tokens": null,
+        "new_work_tokens_display": null,
+        "opus_pct": 100,
+        "sonnet_pct": 0,
+        "haiku_pct": 0,
+        "subagents": null,
+        "api_calls": null,
+        "rework_rate": null,
+        "judge_score": null,
+        "judge_blocked": null,
+        "judge_block_reason": null,
+        "coderabbit_issues": null,
+        "coderabbit_issues_valid": null,
+        "mutation_score_pct": null
+      },
+      "hypotheses": [
+        {
+          "id": "H1",
+          "name": "3-phase sprint works across project types",
+          "result": "confirmed",
+          "evidence": "Sprint 6 covered two milestones (M4+M5) in a single 3-phase sprint. Think->Execute->Ship workflow held despite combined scope."
+        },
+        {
+          "id": "H5",
+          "name": "Gates catch real issues",
+          "result": "confirmed",
+          "evidence": "All 4 gates passed on first attempt. 212 tests, 0 clippy warnings. Gates validated correctness of 2,652 new LOC across 2 new modules."
+        },
+        {
+          "id": "H7",
+          "name": "Skills are followed by agents",
+          "result": "partially_confirmed",
+          "evidence": "Security auditor skill followed: Zeroizing wrappers maintained, no unwrap on network data, timeouts present. Architect skill followed: trait-based transport abstraction, async patterns. PM skill: Gherkin acceptance criteria written. However, no separate security review pass was run as recommended by security-auditor deployment model."
+        }
+      ]
+    },
+    {
+      "project": "weaveto-do",
+      "sprint": 1,
+      "label": "WTD S1",
+      "phase": "M8 \u2014 Vulnerability Scanning",
+      "metrics": {
+        "active_session_time_s": 1061,
+        "active_session_time_display": "17m 41s",
+        "total_tokens": 16767325,
+        "total_tokens_display": "16.8M",
+        "new_work_tokens": 527142,
+        "new_work_tokens_display": "527K",
+        "cache_hit_rate_pct": 96.9,
+        "opus_pct": 70.7,
+        "sonnet_pct": 29.3,
+        "haiku_pct": 0,
+        "subagents": 7,
+        "subagent_note": "5 audit agents + 2 fix agents. Metrics include blended M3.5 unblock agent work from same session.",
+        "api_calls": 210,
+        "rework_rate": 3.1,
+        "tests_total": 390,
+        "tests_added": 0,
+        "coverage_pct": null,
+        "lint_errors": 0,
+        "gates_first_pass": true,
+        "gates_first_pass_note": null,
+        "loc_added": 269,
+        "loc_added_approx": false,
+        "task_type": "hardening",
+        "rework_rate_note": "3.1% from collect.sh",
+        "judge_score": null,
+        "judge_blocked": null,
+        "judge_block_reason": null,
+        "coderabbit_issues": null,
+        "coderabbit_issues_valid": null,
+        "mutation_score_pct": null,
+        "delegation_ratio_pct": 36.3,
+        "orchestrator_tokens": 10688996,
+        "subagent_tokens": 6078329,
+        "context_compressions": 1
+      },
+      "hypotheses": [
+        {
+          "id": "H1",
+          "name": "3-phase sprint works across project types",
+          "result": "confirmed",
+          "evidence": "Security audit/hardening sprint completed in 3-phase workflow. Think phase produced acceptance criteria and wave plan. Execute phase used 5 parallel opus audit agents + serial fix waves. All gates passed first try."
+        },
+        {
+          "id": "H5",
+          "name": "Gates catch real issues",
+          "result": "confirmed",
+          "evidence": "Gates verified 0 regressions from security fixes (390 unit tests, 119 E2E tests pass). npm run check confirmed no new TypeScript errors. Build clean. The security audit itself was the 'gate' \u2014 found 2 critical, 9 high vulnerabilities."
+        },
+        {
+          "id": "H7",
+          "name": "Skills are followed by agents",
+          "result": "confirmed",
+          "evidence": "H7 audit: (1) No console.* in client src/ \u2014 PASS (only a comment reference found). (2) Coverage >= 75% \u2014 PASS (390 tests). (3) Crypto waves serial \u2014 PASS (no crypto files modified, audit-only). (4) Acceptance criteria had happy+failure scenarios \u2014 PASS. (5) No new UI added \u2014 N/A (hardening sprint)."
+        }
+      ]
     }
   ]
 }
