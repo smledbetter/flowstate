@@ -504,6 +504,14 @@ def import_from_file(path, dry_run=False):
         return
 
     sprints_path, data = load_sprints_json()
+
+    # Clear example data on first real import
+    if data["sprints"] and all(s.get("example") for s in data["sprints"]):
+        print("  Cleared example data from sprints.json.")
+        data["sprints"] = []
+        if "_example_data" in data:
+            del data["_example_data"]
+
     check_duplicate(data, entry["project"], entry["sprint"])
 
     data["sprints"].append(entry)

@@ -3,3 +3,5 @@ node_modules/
 *.log
 dashboard/out/
 dashboard/.next/
+sessions.json
+temp/
