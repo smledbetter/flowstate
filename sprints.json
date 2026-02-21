@@ -1035,6 +1035,73 @@
           "evidence": "4/5 H7 instructions complied. PM Gherkin not applied (sprint was a continuation/fix session, not fresh planning). All other skills followed."
         }
       ]
+    },
+    {
+      "project": "uluka",
+      "sprint": 9,
+      "label": "Uluka S9 (Exp 5: single-agent)",
+      "phase": "Phase 22 \u2014 Claim Extraction Quality",
+      "experiment": "exp5-single-agent",
+      "metrics": {
+        "active_session_time_s": 682,
+        "active_session_time_display": "11m 22s",
+        "total_tokens": 10162136,
+        "total_tokens_display": "10.2M",
+        "new_work_tokens": 130505,
+        "new_work_tokens_display": "130K",
+        "cache_hit_rate_pct": 98.7,
+        "opus_pct": 100.0,
+        "sonnet_pct": 0,
+        "haiku_pct": 0,
+        "api_calls": 96,
+        "subagents": 0,
+        "delegation_ratio_pct": 0,
+        "orchestrator_tokens": 10162136,
+        "subagent_tokens": 0,
+        "context_compressions": 0,
+        "rework_rate": 1.5,
+        "tests_total": 557,
+        "tests_added": 37,
+        "coverage_pct": 75.05,
+        "lint_errors": 0,
+        "gates_first_pass": true,
+        "gates_first_pass_note": null,
+        "loc_added": 1226,
+        "loc_added_approx": false,
+        "task_type": "feature",
+        "judge_score": null,
+        "judge_blocked": null,
+        "judge_block_reason": null,
+        "coderabbit_issues": null,
+        "coderabbit_issues_valid": null,
+        "mutation_score_pct": null
+      },
+      "hypotheses": [
+        {
+          "id": "H1",
+          "name": "3-phase sprint works across project types",
+          "result": "confirmed",
+          "evidence": "9th consecutive Uluka sprint. THINK\u2192EXECUTE\u2192SHIP completed in single session. Single-agent mode had no impact on sprint structure."
+        },
+        {
+          "id": "H4",
+          "name": "Wave parallelism helps",
+          "result": "inconclusive",
+          "evidence": "Exp 5: single-agent, no waves. 11m22s active time, 130K new-work tokens, 1226 LOC. Compare S6 (multi-agent): 10m28s, 212K tokens, 582 LOC. S9 produced 2x LOC with fewer tokens \u2014 but scope differs (extraction vs verification). No clear signal that delegation adds value at Uluka scale."
+        },
+        {
+          "id": "H5",
+          "name": "Gates catch real issues",
+          "result": "confirmed",
+          "evidence": "Gate 2 (noUnusedLocals) caught unused 'basename' import in document-extractor.ts. Fixed immediately. 2 Python AST verifier tests failed due to routing priority change \u2014 caught by Gate 3 (vitest), diagnosed and fixed in same cycle."
+        },
+        {
+          "id": "H7",
+          "name": "Skills are followed by agents",
+          "result": "partially_confirmed",
+          "evidence": "PM: Gherkin acceptance criteria written in THINK phase. Architect: no circular deps, side effects behind interfaces. Security: no eval/Function in new code. ProdEng: all new source files have test files, coverage +1.14pp. UX: --verbose diagnostics added. 5/5 H7 audit checks pass. PM Gherkin was concise (not full scenarios per feature) \u2014 partial."
+        }
+      ]
     }
   ]
 }

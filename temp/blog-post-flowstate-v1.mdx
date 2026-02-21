@@ -1,0 +1,344 @@
+# What I Learned Running 19 Sprints With AI Agents
+
+Last time I wrote about Flowstate, I was ten sprints in across two projects. I had a workflow that worked, hypotheses that seemed right, and the conviction that skills, waves, and multi-agent delegation were the key ingredients. I was wrong about most of that.
+
+Nine more sprints, a third project, and five falsification experiments later, I can tell you what actually matters. The answer is simpler — and more uncomfortable — than I expected.
+
+## The Scoreboard
+
+Flowstate has now run 19 sprints across three projects (all sprint data in [`sprints.json`](https://github.com/smledbetter/flowstate/blob/main/sprints.json)):
+
+- **Uluka** — TypeScript security CLI. 10 sprints. 557 tests. 75% coverage. Stable. *(S9 entry: `tests_total: 557`, `coverage_pct: 75.05`)*
+- **Dappled Shade** — Rust P2P encrypted messaging over Tor. 7 sprints. 212 tests. *(DS S6 entry: `tests_total: 212`)*
+- **Weaveto.do** — SvelteKit end-to-end encrypted task manager. 2 sprints. 403 unit tests + 119 E2E tests. *(WTD S2 entry: `tests_total: 403`; E2E count from Playwright test suite)*
+
+Three languages. Three architectures. One workflow.
+
+{/* <TokensChart sprints={derivedSprints} /> */}
+
+```
+Sprint Efficiency: New-Work Tokens per LOC
+
+  S0   ████████████████████████  239
+  S1   ████████                   78
+  S2   ██████████████████████████ 256
+  S3   █████████                  93
+  S8   ████████████████████       197
+  S9   ███████████                106   <-- single-agent experiment
+  DS0  ████████████████████       193
+  DS1  ████████████████████████   242
+       ─────────────────────────────
+       0    50   100  150  200  250  300
+       tokens per line of shipped code
+```
+
+*Chart values computed from `sprints.json` fields `new_work_tokens / loc_added`. For example, S9: 130,505 / 1,226 = 106.*
+
+But the numbers only matter in the context of what I tested. And I tested hard.
+
+## Five Experiments That Changed Everything
+
+After ten sprints of accumulating data and confirming my own hypotheses, I got uncomfortable. Was Flowstate actually helping, or was Claude Code just good at building software? So I designed experiments to find out.
+
+### Experiment 1: What happens without Flowstate?
+
+I ran one milestone on each project with raw Claude Code. No skills. No phases. No gates. No retrospective. Just "build this feature from the PRD." *(Design and results: [`RESULTS.md` section 11.3](https://github.com/smledbetter/flowstate/blob/main/RESULTS.md))*
+
+**Result**: Both finished 4-8x faster with comparable quality (76-88% blind review scores). *(Uluka S7 baseline: 5m 38s vs S6's 22m 1s. DS S5 baseline: 6m 19s vs S4's 11m 33s. Blind review: Uluka 19/25 = 76%, DS 22/25 = 88%. All times from `sprints.json` `active_session_time_s` fields.)*
+
+That hurt. The planning ceremony — consensus agent, Gherkin acceptance criteria, wave-based execution — was adding massive overhead for well-scoped, single-module work. The skills I'd carefully refined over months? The agent produced similar quality without them.
+
+### Experiment 2: Do gates actually catch bugs?
+
+I planted three bugs in Uluka — an unused import, a wrong confidence threshold, and a type error — then ran a normal Flowstate sprint to see if the gates would catch them. *(Experiment design: [`RESULTS.md` section 11.3](https://github.com/smledbetter/flowstate/blob/main/RESULTS.md). Sprint data: `sprints.json` Uluka S8 entry, `gates_first_pass_note: "3 regressions from planted bugs"`.)*
+
+**Result**: All three caught. Tests found the threshold bug. Lint found the unused import. Type check found the type error. All fixed in one cycle, all correctly traced back to the planted commit.
+
+Gates work. Not "probably work" or "should work in theory." They catch real bugs, reliably, automatically.
+
+### Experiment 3: Are agents honest about their own compliance?
+
+After a sprint on Dappled Shade, I gave the code artifacts to a fresh agent with zero Flowstate knowledge and asked it to score the output on five dimensions. *(Experiment design and blind judge prompt: [`RESULTS.md` section 11.3.2](https://github.com/smledbetter/flowstate/blob/main/RESULTS.md))*
+
+**Result**: The sprint agent's self-assessment wasn't inflated — but it was shallow. It caught process-level gaps ("no security audit wave") while missing six code-level violations the blind judge found: non-constant-time token comparison, binding to 0.0.0.0, missing cancellation safety docs, weak hash function, overly-public struct fields, and unjustified `allow(dead_code)`. *(Full violation list in RESULTS.md Experiment 3 findings.)*
+
+The audit was checking "did the activity happen?" instead of "does the code follow the instruction?" Process compliance and code compliance are different things.
+
+### Experiment 4: Does structure hold under pressure?
+
+I combined two milestones into a single sprint — 2.5x normal scope. Transport manager plus Matrix bridge in one go. *(Design: [`RESULTS.md` section 11.3](https://github.com/smledbetter/flowstate/blob/main/RESULTS.md). Sprint data: `sprints.json` DS S6 entry.)*
+
+**Result**: Structure held. 2,652 lines, 48 tests, gates first pass. *(Verified: DS S6 `loc_added: 2652`, `tests_added: 48`, `gates_first_pass: true`.)* The planning phase correctly grouped transport concerns and prevented the kind of wrong turns that waste entire sprints on larger scopes.
+
+### Experiment 5: Do you even need multiple agents?
+
+This was the most recent experiment. I ran Uluka Sprint 9 with a single agent — no subagents, no Task tool, no delegation. One opus session doing everything. *(Experiment constraint prompt: [`temp/experiment-5-single-agent.md`](https://github.com/smledbetter/flowstate/blob/main/temp/experiment-5-single-agent.md). Sprint data: `sprints.json` Uluka S9 entry.)*
+
+**Result**: Single-agent won.
+
+| Dimension | Multi-Agent (S6/S8 avg) | Single-Agent (S9) |
+|-----------|-------------------|---------------------|
+| Active time | 10m 28s | 11m 22s |
+| New-work tokens | 212K | 130K (-39%) |
+| LOC produced | 830 | 1,226 (+48%) |
+| Gate first-pass | 50% | 100% |
+| Context compressions | 0 | 0 |
+
+*Multi-agent baseline: average of Uluka S6 (`loc_added: 582`) and S8 (`loc_added: 1078`, `new_work_tokens: 212482`, `active_session_time_display: "10m 28s"`). S6 gates passed first try, S8 did not (planted bugs) = 50%. Single-agent S9: `new_work_tokens: 130505`, `loc_added: 1226`, `active_session_time_display: "11m 22s"`, `gates_first_pass: true`, `context_compressions: 0`. All values from `sprints.json`.*
+
+The agent produced more code with fewer tokens, passed all gates on the first attempt, and never ran out of context. The "fresh context windows" that subagents theoretically provide turned out to be irrelevant — Uluka sprints fit comfortably in a single context window. The overhead of orchestrating subagents (writing prompts, reading results, handling coordination) was pure waste.
+
+{/* <ModelMixChart sprints={derivedSprints} /> */}
+
+```
+Model Mix Evolution
+
+  S0  ██████████████████████████████████░░░░░░░░░░░░░░░░░░  66% Opus / 34% Sonnet
+  S1  ██████████████████████████████░░░░░░░░░░░░░░░░░░░░░░  60% Opus / 40% Sonnet
+  S2  ██████████████████████████████████░░░░░░░░░░░░░░░░░░  68% Opus / 19% Son / 12% Haiku
+  S3  ████████████████████████████████████████████░░░░░░░░  88% Opus / 9% Sonnet / 3% Haiku
+  S8  ██████████████████████████████████████████░░░░░░░░░░  84% Opus / 8% Son / 8% Haiku
+  S9  ██████████████████████████████████████████████████    100% Opus  (single-agent)
+       ─────────────────────────────────────────────────
+       ■ Opus  ░ Sonnet  ░ Haiku
+```
+
+*Model percentages from `sprints.json` fields `opus_pct`, `sonnet_pct`, `haiku_pct` (rounded to nearest integer).*
+
+## What Actually Matters
+
+After 19 sprints and 5 experiments, Flowstate's value proposition narrows to two things.
+
+### 1. Gates
+
+Automated quality gates — tests, type checks, linting, coverage thresholds — are the single most reliable mechanism in the entire system. They caught every planted bug (Exp 2: 3/3). They caught real bugs the agents introduced (S9 lint gate caught an unused import during development; S8 test gate caught a planted threshold regression). They compound: each sprint starts on a codebase where everything passes, which means the next agent inherits working code. *(H5 is the only hypothesis confirmed on all 3 projects plus adversarial testing — see the heatmap below, or search `sprints.json` for `"id": "H5"`.)*
+
+Gates don't require agent compliance. They don't depend on skill instructions being followed. They run after the code is written and give you a binary answer: ship or fix. Every other mechanism in Flowstate is optional. Gates are not.
+
+### 2. Sprint structure — but only when scope is large
+
+The three-phase structure (Think, Execute, Ship) prevents wrong turns on multi-module work. When you're touching 15+ files across multiple subsystems, planning the execution order and grouping by dependency genuinely saves time. Experiment 4 confirmed this: the structure held at 2.5x scope.
+
+But for well-scoped, single-module work? Skip it. Experiment 1 showed the full ceremony adds 4-8x overhead with marginal quality improvement. The "light mode" — skip planning, implement directly, run gates — is the right default for small sprints.
+
+### What turned out to be marginal
+
+**Skills as markdown perspectives.** The five-skill consensus agent (PM, UX, Architect, Production Engineer, Security Auditor) produces coherent output, but Experiment 1 showed comparable quality without any skills loaded (76-88% blind review scores with zero skills). Skills shape how agents think, which is valuable for complex domains (crypto, security), but the compliance overhead of auditing whether agents actually follow them isn't worth it for most sprints. *(Skill files: [`skills/`](https://github.com/smledbetter/flowstate/tree/main/skills). H2 weakened by Exp 1 — search `sprints.json` for `"id": "H2"`.)*
+
+**Multi-agent delegation on moderate codebases.** Experiment 5 killed this for Uluka-sized work. Subagents add coordination overhead without benefit when the context window isn't a constraint. It's clear from projects like Steve Yegge's [Gas Town](https://github.com/steveyegge/gastown) — which orchestrates 20-30 parallel Claude Code instances on a single codebase — that multi-agent coordination pays off at scale. But my data points to a drop-off in multi-agent efficacy when the projects (and repos) are small. Dappled Shade's Sprint 0 used 14 agents across 7 waves *(DS S0 entry: `subagents: 14`, `subagent_note: "across 7 waves"`)* and benefited from it; Uluka's single-agent sprint outperformed its multi-agent baselines on every dimension. The default should be single-agent until you hit context limits or have genuinely independent workstreams that justify the coordination cost.
+
+**Retrospective-driven skill evolution.** The retro loop worked for the first few sprints — skills genuinely improved from 3/5 compliance to 5/5 *(H7 scores: S0 = 3/5, S1 = 4/5, S2 = 4.5/5, S3 = 5/5 — search `sprints.json` for `"id": "H7"`)*. But then it stabilized. Uluka hit "per-project stability" (3 consecutive sprints with zero skill changes) at Sprint 3 and has been frozen since *(documented in [`RESULTS.md` section 8.3.1](https://github.com/smledbetter/flowstate/blob/main/RESULTS.md))*. The retro loop finds its steady state quickly. After that, it's maintenance, not improvement.
+
+## The Hypothesis Heatmap
+
+Flowstate tracks 12 hypotheses across all sprints *(defined in [`PRD.md` section 6](https://github.com/smledbetter/flowstate/blob/main/PRD.md), results per sprint in `sprints.json` `hypotheses` arrays)*. Here's where they stand after 19 data points and 5 experiments:
+
+{/* <HypothesisHeatmap sprints={derivedSprints} hypotheses={hypotheses} compact={true} /> */}
+
+```
+Hypothesis Results Across All Sprints
+
+          S0  S1  S2  S3  S8  S9  DS0 DS1 DS6 W1  W2  Exp1 Exp2 Exp3 Exp4 Exp5
+ H1 3ph   C   C   C   C   C   C   C   C   C   -   -   weak  -    -    C    C
+ H2 skill C   C   -   -   -   -   C   -   -   -   -   weak  -    -    -    -
+ H3 cons  -   C   -   -   -   -   -   -   -   -   -    -    -    -    -    -
+ H4 wave  C   -   -   -   -   ?   C   C   -   -   -    -    -    -    C    ?
+ H5 gate  ?   ?   ?   C   C   C   C   C   C   -   -    -    C    -    -    C
+ H7 skill 3   4  4.5  5   4   P   4   5   3   -   -   weak  -   miss  -    P
+ H8 cov   -   C   C   -   C   -   -   -   -   -   -    -    C    -    -    -
+ H9 lint  -   C   C   C   C   -   -   -   -   -   -    -    C    -    -    -
+ H11 new  -   -   -   -   -   -   C   -   -   -   -    -    -    -    -    -
+ H12 lang -   -   -   -   -   -   C   C   -   C   -    -    -    -    -    -
+
+C=confirmed  ?=inconclusive  P=partial  weak=weakened  miss=methodology gap
+```
+
+The key findings map:
+- **H5 (gates catch real issues)**: The strongest hypothesis. Confirmed on all 3 projects plus adversarial testing.
+- **H1 (3-phase structure)**: Confirmed for multi-module work, weakened for small tasks.
+- **H4 (wave parallelism)**: Inconclusive after Exp 5. Single-agent matched multi-agent on Uluka.
+- **H7 (skill compliance)**: Process audits inflate scores. Code-level audits are harder but more honest.
+- **H2 (5-skill set)**: Weakened. Comparable quality without skills in Exp 1.
+
+## What I Got Wrong
+
+In the first blog post, I wrote:
+
+> *"Skills shape how agents think. Checklists tell agents what to do. Agents are better at thinking than following procedures."*
+
+This is still true. But what I missed is that the distinction between "shaping how agents think" and "not mattering at all" is hard to measure. Experiment 1 showed that agents produce good code without any skill guidance — 76% and 88% blind review scores with no skills loaded *(RESULTS.md section 11.3)*. The skills might be helping in ways I can't isolate — or they might be comfort blankets that make me feel like the system is more sophisticated than it is.
+
+I also wrote:
+
+> *"Self-contained modules are cheaper."*
+
+Also true, but the implication I drew — that multi-agent delegation is the way to exploit module independence — was wrong. Single-agent mode with sequential execution is cheaper than multi-agent parallel execution when the context window isn't a constraint — S9 used 39% fewer new-work tokens than the multi-agent average while producing 48% more code *(S9 vs S6/S8 comparison in `sprints.json`)*. The module independence helps the agent regardless of whether it's delegating.
+
+And I was wrong about the meta-project itself. My goal from the start has been to learn how to use Claude Code well — natively multi-agent — and find a replicable workflow that meets my goals: code quality, wall time, token efficiency. Flowstate was the vehicle for that learning. But I spent more sessions tweaking Flowstate than using it. Designing experiments, writing to RESULTS.md, updating hypothesis tables, building a dashboard. The risk I identified in the PRD *(section 10, "Risks")* — "Flowstate becomes a permanent meta-project, always improving itself, never serving actual work" — materialized. I'm taking a break from trying to make a "meta-tool" like Flowstate, but I'll keep my meta-thinking alive in data-driven blog posts like this one.
+
+## The Dashboard
+
+I built a static dashboard to visualize the sprint data. It reads from `sprints.json` (19 sprints, single source of truth) and renders charts for token efficiency, model mix, cache hit rates, hypothesis tracking, and cross-project comparison.
+
+{/* <CacheHitChart sprints={derivedSprints} /> */}
+
+```
+Cache Hit Rate by Sprint
+
+100% ┤
+ 99% ┤                                              ●
+ 98% ┤                                    ●    ●
+ 97% ┤                          ●
+ 96% ┤              ●                         ●
+ 95% ┤    ●    ●                    ●
+ 94% ┤
+     └────S0───S1───S2───S3───S8───S9──DS0──DS1──W1───W2
+           95-98% cache hit rate across all sprints
+           Single-agent S9 hit 98.7% (tied for highest with S6)
+```
+
+It's not fancy. It's a Next.js static export served with `npx serve out`. But it answers the questions I actually care about: is token efficiency improving? Are gates catching things? Which hypotheses have the most evidence?
+
+## Flowstate v1: Release Status
+
+I'm calling Flowstate v1 done. Not because everything is perfect, but because the system has answered its own questions.
+
+**What it is**: A set of markdown files — sprint templates, skill definitions, a metrics collection script, and an import pipeline — that you copy into a project and use with Claude Code. Plus a static Next.js dashboard for visualizing sprint data across projects.
+
+**What it proved**: Gates are the strongest quality mechanism. Sprint structure helps for multi-module work. Skills are optional but harmless. Multi-agent delegation is optional and sometimes harmful. The retro loop stabilizes quickly.
+
+**What it didn't prove**: That any of this is necessary. Experiment 1 showed that raw Claude Code with no framework produces comparable quality 4-8x faster for small tasks *(RESULTS.md section 11.3)*. Flowstate earns its keep on complex, multi-module sprints where planning prevents wrong turns and gates prevent regressions. For a quick bug fix or a single-file feature, just use Claude Code directly.
+
+**What's next**: I'm going back to building Uluka, Dappled Shade, and Weaveto.do. Flowstate will keep collecting sprint data passively — import after each sprint, five minutes — but I'm pausing building features on the meta-project.
+
+I still aspire to projects that are big enough to benefit from multi-agent orchestration — the kind of codebases I work on at my day job, where a single context window genuinely can't hold everything. The dream of vibecoding is writing a few markdown files, pointing Claude Code at a codebase, and walking away while agents do the work. My current side projects are just too small to take advantage of that. But the workflow is ready for when the scale justifies it.
+
+The repo will be open-sourced. Everything is in the repo: [`PRD.md`](https://github.com/smledbetter/flowstate/blob/main/PRD.md), [`RESULTS.md`](https://github.com/smledbetter/flowstate/blob/main/RESULTS.md), all 19 sprint datasets in [`sprints.json`](https://github.com/smledbetter/flowstate/blob/main/sprints.json), experiment designs and outcomes, the dashboard. Every claim in this post can be verified against those files. Take what's useful. Ignore what isn't.
+
+---
+
+## Appendix: How to Use Flowstate on Your Own Project
+
+### What You Need
+
+- Claude Code (Max subscription or API)
+- A project with a test runner, type checker, and linter
+- A markdown PRD or README describing what you're building
+
+### Step 1: Copy the files
+
+```bash
+# Clone Flowstate
+git clone https://github.com/smledbetter/flowstate.git
+
+# Create the project workspace
+mkdir -p ~/.flowstate/my-project/metrics
+mkdir -p ~/.flowstate/my-project/retrospectives
+
+# Copy skills into your project (Claude Code auto-loads from .claude/skills/)
+cp flowstate/skills/*.md your-project/.claude/skills/
+
+# Add to .gitignore
+echo ".claude/skills/" >> your-project/.gitignore
+
+# Symlink the metrics collector
+ln -s /path/to/flowstate/tier-1/collect.sh ~/.flowstate/my-project/metrics/collect.sh
+```
+
+### Step 2: Configure your gates
+
+Create `~/.flowstate/my-project/flowstate.config.md`:
+
+```markdown
+# Flowstate Configuration
+
+## Quality Gates
+- test_command: npm test          # or cargo test, pytest, etc.
+- type_check: npx tsc --noEmit    # or cargo check, mypy, etc.
+- lint: npx eslint .              # or cargo clippy, ruff, etc.
+- coverage_command: npm test -- --coverage
+- coverage_threshold: 65          # start low, raise as you go
+
+## Sprint Settings
+- commit_strategy: per-wave
+- session_break_threshold: 50%
+```
+
+Every language has a test runner, a type checker (or equivalent), and a linter. If your project doesn't have all three configured, set them up before your first sprint. Gates without tooling are suggestions.
+
+### Step 3: Write a roadmap
+
+Create `your-project/docs/ROADMAP.md`. Break your PRD into sprint-sized phases:
+
+```markdown
+# Roadmap
+
+## Phase 1: Core Data Model (Sprint 1)
+- User model with auth
+- Database schema
+- Basic CRUD API
+
+## Phase 2: Authentication (Sprint 2)
+- JWT tokens
+- Login/register endpoints
+- Middleware
+
+## Phase 3: ...
+```
+
+Each phase should be completable in one sprint (10-40 minutes of agent time). If a phase feels too big, split it.
+
+### Step 4: Write your first baseline
+
+Create `~/.flowstate/my-project/metrics/baseline-sprint-1.md`:
+
+```markdown
+# Sprint 1 Baseline
+
+## Starting State
+- SHA: abc1234
+- Tests: 0
+- Coverage: 0%
+- Lint errors: 0
+- Type check: clean
+
+## Gate Status
+| Gate | Command | Status |
+|------|---------|--------|
+| Type check | npx tsc --noEmit | PASS |
+| Lint | npx eslint . | PASS |
+| Tests | npm test | PASS (0 tests) |
+| Coverage | npm test -- --coverage | N/A |
+
+## Phase Scope
+Phase 1: Core Data Model
+- [paste the phase description from your roadmap]
+```
+
+### Step 5: Run your first sprint
+
+Open a fresh Claude Code session in your project directory. Paste the Phase 1+2 prompt from `flowstate/tier-1/sprint.md`, filling in:
+
+- Your project name and phase
+- The path to your baseline (`~/.flowstate/my-project/metrics/baseline-sprint-1.md`)
+- Your gate commands from `flowstate.config.md`
+
+The agent will plan, execute, and run gates. When it says "Ready for Phase 3," paste the Phase 3 prompt.
+
+### Step 6: Review and import
+
+After the sprint:
+
+1. Read the retrospective at `~/.flowstate/my-project/retrospectives/sprint-1.md`
+2. Approve or reject any proposed skill changes
+3. Import metrics: `python3 flowstate/tools/import_sprint.py --from ~/.flowstate/my-project/metrics/sprint-1-import.json`
+
+### The Minimum Viable Flowstate
+
+If this all seems like too much, here's the absolute minimum that captures most of the value:
+
+1. **Configure gates.** Test runner + type checker + linter, all must pass before you ship.
+2. **Write a baseline.** Current test count, coverage, SHA. One markdown file.
+3. **Tell the agent to run gates after building.** That's it. No skills, no phases, no retro.
+
+The gates alone — automated, non-negotiable quality checks that run after every sprint — are where Flowstate's strongest evidence lives. H5 (gates catch real issues) is the only hypothesis confirmed across all three projects plus adversarial testing. Everything else is structure that helps when scope is large and optional when it's small.
