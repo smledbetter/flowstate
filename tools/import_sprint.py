@@ -530,8 +530,7 @@ def import_from_file(path, dry_run=False):
         print(f"  Auto-corrections applied: {len(warnings)}")
     print(f"\n  Next steps:")
     print(f"    1. Review: cat sprints.json | python3 -m json.tool | tail -50")
-    print(f"    2. Regenerate tables: python3 tools/generate_tables.py cross-project")
-    print(f"    3. Update RESULTS.md with new tables")
+    print(f"    2. Update RESULTS.md with sprint notes")
 
 
 def load_json_report(project, sprint_num):
@@ -751,8 +750,7 @@ def interactive_import(project, sprint_num):
     print(f"\n  Added {label} to sprints.json ({len(data['sprints'])} total sprints).")
     print(f"\n  Next steps:")
     print(f"    1. Review: cat sprints.json | python3 -m json.tool | tail -50")
-    print(f"    2. Regenerate tables: python3 tools/generate_tables.py cross-project")
-    print(f"    3. Update RESULTS.md with new tables")
+    print(f"    2. Update RESULTS.md with sprint notes")
 
 
 def main():

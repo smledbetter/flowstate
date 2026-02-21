@@ -1,0 +1,5 @@
+{
+  "_note": "Hypothesis registry. Define hypotheses here to validate them during sprint imports.",
+  "valid_results": ["confirmed", "partially_confirmed", "inconclusive", "falsified"],
+  "hypotheses": {}
+}
