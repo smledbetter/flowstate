@@ -5,3 +5,4 @@ dashboard/out/
 dashboard/.next/
 sessions.json
 temp/
+.local/

@@ -83,6 +83,37 @@ After each sprint, metrics are imported into `sprints.json`. Fields tracked:
 
 Use the MCP server (`tools/mcp_server.py`) to collect metrics directly from Claude Code session logs, or `tier-1/collect.sh` for shell-based collection.
 
+## Continuous Flow (v1.1)
+
+Continuous Flow eliminates human touchpoints between sprints. Instead of paste-prompt-per-sprint, the agent chains sprints autonomously until the roadmap is complete or it needs a human decision.
+
+### How It Works
+
+1. **Single entry point**: One prompt starts the entire build. The agent runs Sprint 0 (roadmap, baseline, gates), then chains through Sprint 1, 2, ... N.
+2. **No permission prompts**: Sprint 0 sets up `.claude/settings.json` with pre-approved permissions. No manual "bypass permissions" click needed.
+3. **No Phase 3 pause**: When gates pass, Phase 3 (Ship) runs automatically. The agent writes the retro, baseline, and progress file, then starts the next sprint.
+4. **Sprint isolation via subagents**: Each sprint runs as a Task subagent with fresh context, avoiding the ~270K token ceiling and context degradation. The orchestrator reads `progress.md` between sprints for handoff state.
+5. **Decision batching**: Ambiguities are logged to `{FLOWSTATE}/decisions-pending.md` with a default choice. The agent continues building and presents pending decisions at natural checkpoints (every 3-4 sprints) rather than blocking on each one.
+
+### When the Agent Stops
+
+- All roadmap phases are marked done
+- A sprint fails gates after 3 fix cycles
+- Feasibility check fails and requires a human decision
+- A requirement is genuinely ambiguous with no safe default
+
+### What Didn't Change
+
+- Gates are still mandatory, every sprint, every change
+- One sprint = one logical unit of work (~270K new-work tokens)
+- Sprint 0 still pauses for human roadmap review before continuing (the roadmap is the foundation)
+- Metrics are still collected per-sprint via MCP tools
+- The original sprint-per-session workflow (`tier-1/sprint.md`) still works for manual use
+
+### Constraints
+
+Claude Code sessions can't self-restart. If the session dies (timeout, crash, context limit), the human re-launches with a "continue" prompt. The agent picks up from `progress.md`. Practical throughput: 3-5 sprints per session (30-90 minutes active time, 2000-8000 LOC).
+
 ## Research Background
 
 Flowstate was developed over 19 sprints across three projects (TypeScript, Rust, SvelteKit). The full research data -- experiment designs, hypothesis tracking, and raw sprint data -- is preserved on the [`archive/v1-research`](https://github.com/smledbetter/flowstate/tree/archive/v1-research) branch.
