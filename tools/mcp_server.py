@@ -44,7 +44,7 @@ TOOLS = [
             "properties": {
                 "project_path": {
                     "type": "string",
-                    "description": "Absolute path to the project directory (e.g. /Users/stevo/Sites/Weaveto.do)",
+                    "description": "Absolute path to the project directory (e.g. /home/dev/projects/my-app)",
                 },
             },
             "required": ["project_path"],
