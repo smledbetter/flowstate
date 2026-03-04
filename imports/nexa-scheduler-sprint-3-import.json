@@ -1,0 +1,72 @@
+{
+  "project": "nexa-scheduler",
+  "sprint": 3,
+  "label": "NS S3",
+  "phase": "Policy Configuration via ConfigMap",
+  "metrics": {
+    "active_session_time_s": 670,
+    "active_session_time_display": "11m 10s",
+    "total_tokens": 7717246,
+    "total_tokens_display": "7.7M",
+    "new_work_tokens": 207030,
+    "new_work_tokens_display": "207K",
+    "cache_hit_rate_pct": 97.3,
+    "opus_pct": 93.8,
+    "sonnet_pct": 0,
+    "haiku_pct": 6.2,
+    "api_calls": 93,
+    "subagents": 2,
+    "delegation_ratio_pct": 21.1,
+    "orchestrator_tokens": 6088858,
+    "subagent_tokens": 1628388,
+    "context_compressions": 1,
+    "rework_rate": 1.5,
+    "tests_total": 30,
+    "tests_added": 8,
+    "coverage_pct": 90.1,
+    "lint_errors": 0,
+    "gates_first_pass": true,
+    "gates_first_pass_note": "",
+    "loc_added": 910,
+    "loc_added_approx": false,
+    "task_type": "feature",
+    "judge_score": null,
+    "judge_blocked": null,
+    "judge_block_reason": null,
+    "coderabbit_issues": null,
+    "coderabbit_issues_valid": null,
+    "mutation_score_pct": null
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "name": "3-phase sprint works across project types",
+      "result": "confirmed",
+      "evidence": "Third implementation sprint completed cleanly. THINK (plan mode + Gherkin AC) -> EXECUTE (sequential with continuous /gate) -> SHIP. Policy engine, ConfigMap parsing, validation, plugin integration, and cross-plugin integration tests all delivered."
+    },
+    {
+      "id": "H5",
+      "name": "Gates catch real issues",
+      "result": "confirmed",
+      "evidence": "All 4 gates passed on first run. Coverage maintained at 90.1% across 5 packages despite adding a new package (policy) with constructor code that requires a real k8s API server. Continuous gate strategy prevented regression."
+    },
+    {
+      "id": "H7",
+      "name": "Skills are followed by agents",
+      "result": "confirmed",
+      "evidence": "5/5 H7 audit items passed. Fail-closed on missing/malformed ConfigMap (security-auditor). ConfigMap watcher behind Provider interface with StaticProvider for tests (production-engineer). Policy engine exposes Provider interface, not shared global (architect). Validation errors are field-specific (ux-designer). Gherkin scenarios map to named tests (product-manager)."
+    },
+    {
+      "id": "H8",
+      "name": "Coverage gate catches regressions",
+      "result": "confirmed",
+      "evidence": "Coverage dropped from 100% to 90.1% due to ConfigMapProvider and New() constructors requiring a real k8s API server. The coverage gate flagged this explicitly. StaticProvider was created to maintain testability for all logic paths."
+    },
+    {
+      "id": "H11",
+      "name": "Flowstate works for greenfield projects",
+      "result": "confirmed",
+      "evidence": "Fourth sprint on greenfield Go/k8s project. Baseline guided scope accurately. Roadmap phase deliverables matched actual output. Active time continued to decrease (11m vs 14m vs 31m)."
+    }
+  ]
+}

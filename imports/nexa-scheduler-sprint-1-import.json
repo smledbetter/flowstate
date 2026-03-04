@@ -1,0 +1,72 @@
+{
+  "project": "nexa-scheduler",
+  "sprint": 1,
+  "label": "NS S1",
+  "phase": "Project Scaffolding & Scheduler Plugin Shell",
+  "metrics": {
+    "active_session_time_s": 1893,
+    "active_session_time_display": "31m 33s",
+    "total_tokens": 8842798,
+    "total_tokens_display": "8.8M",
+    "new_work_tokens": 294608,
+    "new_work_tokens_display": "294K",
+    "cache_hit_rate_pct": 96.6,
+    "opus_pct": 92.7,
+    "sonnet_pct": 0,
+    "haiku_pct": 7.3,
+    "api_calls": 141,
+    "subagents": 3,
+    "delegation_ratio_pct": 7.3,
+    "orchestrator_tokens": 8200465,
+    "subagent_tokens": 642333,
+    "context_compressions": 0,
+    "rework_rate": 1.4,
+    "tests_total": 10,
+    "tests_added": 10,
+    "coverage_pct": 100.0,
+    "lint_errors": 0,
+    "gates_first_pass": true,
+    "gates_first_pass_note": "",
+    "loc_added": 1151,
+    "loc_added_approx": false,
+    "task_type": "feature",
+    "judge_score": null,
+    "judge_blocked": null,
+    "judge_block_reason": null,
+    "coderabbit_issues": null,
+    "coderabbit_issues_valid": null,
+    "mutation_score_pct": null
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "name": "3-phase sprint works across project types",
+      "result": "confirmed",
+      "evidence": "THINK (plan mode with Gherkin AC) → EXECUTE (sequential build with /gate after each step) → SHIP (metrics, retro, baseline). All 3 phases completed cleanly for first Go implementation sprint."
+    },
+    {
+      "id": "H5",
+      "name": "Gates catch real issues",
+      "result": "confirmed",
+      "evidence": "Build gate caught wrong interface signatures (pointer vs value CycleState/NodeInfo, string vs NodeInfo in Score). Fixed before tests were written. Without build gate, tests would have failed with confusing type errors."
+    },
+    {
+      "id": "H7",
+      "name": "Skills are followed by agents",
+      "result": "partially_confirmed",
+      "evidence": "4/5 H7 audit instructions followed. Gherkin AC written (product-manager), tests for all source files (production-engineer), no premature abstractions (architect), minimal attack surface (security-auditor). Cheapest-model instruction not followed — all subagents used haiku for research, but Makefile/Dockerfile were written by opus in main session."
+    },
+    {
+      "id": "H11",
+      "name": "Flowstate works for greenfield projects",
+      "result": "confirmed",
+      "evidence": "First code sprint on greenfield Go/k8s project. Produced working scheduler binary, 2 plugins with 100% coverage, Dockerfile, Makefile, all gates passing. Sprint 0 conventions and roadmap directly guided implementation."
+    },
+    {
+      "id": "H12",
+      "name": "Skills generalize across languages",
+      "result": "confirmed",
+      "evidence": "Skills written for general use (not language-specific) applied cleanly to Go/k8s project. Production-engineer TDD process, architect module boundaries, security-auditor minimal surface — all relevant without Go-specific adjustments."
+    }
+  ]
+}

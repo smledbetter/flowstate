@@ -1,0 +1,72 @@
+{
+  "project": "nexa-scheduler",
+  "sprint": 12,
+  "label": "NS S12",
+  "phase": "Admission Webhook for Label Integrity",
+  "metrics": {
+    "active_session_time_s": 1591,
+    "active_session_time_display": "26m 31s",
+    "total_tokens": 11728354,
+    "total_tokens_display": "11.7M",
+    "new_work_tokens": 639031,
+    "new_work_tokens_display": "639K",
+    "cache_hit_rate_pct": 94.5,
+    "opus_pct": 91.7,
+    "sonnet_pct": 0,
+    "haiku_pct": 8.3,
+    "api_calls": 152,
+    "subagents": 6,
+    "delegation_ratio_pct": 17.7,
+    "orchestrator_tokens": 9650457,
+    "subagent_tokens": 2077897,
+    "context_compressions": 1,
+    "rework_rate": 1.4,
+    "tests_total": 82,
+    "tests_added": 10,
+    "coverage_pct": 93.2,
+    "lint_errors": 0,
+    "gates_first_pass": true,
+    "gates_first_pass_note": "",
+    "loc_added": 1556,
+    "loc_added_approx": false,
+    "task_type": "feature",
+    "judge_score": null,
+    "judge_blocked": null,
+    "judge_block_reason": null,
+    "coderabbit_issues": null,
+    "coderabbit_issues_valid": null,
+    "mutation_score_pct": null
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "name": "3-phase sprint works across project types",
+      "result": "confirmed",
+      "evidence": "Sprint 12 delivered a new security feature (admission webhook) with a new binary, new package, new Helm subchart, and threat model update. All gates passed first run. The 3-phase process handled this cross-cutting feature sprint (Go + Helm + Docker + docs) as effectively as pure Go sprints."
+    },
+    {
+      "id": "H5",
+      "name": "Gates catch real issues",
+      "result": "confirmed",
+      "evidence": "All 4 core gates plus helm lint and smoke vet passed on first run. Coverage gate confirmed webhook package at 93.2%, validating test quality for the new security-critical package. Lint gate ensured no dead code or style regressions across 16 new files."
+    },
+    {
+      "id": "H7",
+      "name": "Skills are followed by agents",
+      "result": "confirmed",
+      "evidence": "5/5 H7 instructions from baseline were applicable and followed: (1) Defense in depth: webhook + audit logging + fail-closed + namespaceSelector scoping; (2) Tests assert behavior (allow/deny outcomes), not implementation; (3) TLS and config loading behind interfaces for testability; (4) Adversarial scenarios tested (spoofed labels, malformed body, missing body, subresource bypass); (5) Rejection messages include namespace, label, and allowed values."
+    },
+    {
+      "id": "H4",
+      "name": "Wave parallelism helps",
+      "result": "partially_confirmed",
+      "evidence": "Delegation ratio 17.7% with 6 subagents. Used for investigation (WebSearch for admission webhook patterns) and parallel independent file creation. Main implementation was sequential due to handler<->config dependency. Parallelism helped for research but not for core implementation."
+    },
+    {
+      "id": "H11",
+      "name": "Flowstate works for greenfield projects",
+      "result": "confirmed",
+      "evidence": "Sprint 12 is the 13th sprint (0-12). Project now has 3 binaries, CRD support, 3 Helm subcharts, 82 unit tests + 13 smoke tests, and 93.2% webhook coverage. Process continues to scale as the project grows in complexity."
+    }
+  ]
+}

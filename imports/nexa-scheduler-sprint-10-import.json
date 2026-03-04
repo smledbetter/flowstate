@@ -1,0 +1,66 @@
+{
+  "project": "nexa-scheduler",
+  "sprint": 10,
+  "label": "NS S10",
+  "phase": "CRD Policy & Node State Controller",
+  "metrics": {
+    "active_session_time_s": 1068,
+    "active_session_time_display": "17m 48s",
+    "total_tokens": 13043503,
+    "total_tokens_display": "13.0M",
+    "new_work_tokens": 325358,
+    "new_work_tokens_display": "325K",
+    "cache_hit_rate_pct": 97.5,
+    "opus_pct": 96.6,
+    "sonnet_pct": 0,
+    "haiku_pct": 3.4,
+    "api_calls": 152,
+    "subagents": 4,
+    "delegation_ratio_pct": 16.0,
+    "orchestrator_tokens": 10959160,
+    "subagent_tokens": 2084343,
+    "context_compressions": 0,
+    "rework_rate": 1.3,
+    "tests_total": 66,
+    "tests_added": 7,
+    "coverage_pct": 80,
+    "lint_errors": 0,
+    "gates_first_pass": true,
+    "gates_first_pass_note": "",
+    "loc_added": 1555,
+    "loc_added_approx": false,
+    "task_type": "feature",
+    "judge_score": null,
+    "judge_blocked": null,
+    "judge_block_reason": null,
+    "coderabbit_issues": null,
+    "coderabbit_issues_valid": null,
+    "mutation_score_pct": null
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "name": "3-phase sprint works across project types",
+      "result": "confirmed",
+      "evidence": "Largest feature sprint to date (1555 LOC, 24 files, 7 new tests). Plan mode produced the architecture (CRD provider, composite provider, node state controller, Helm subchart). Implementation executed cleanly with all 9 gates passing first run. The 3-phase process scales to large feature sprints."
+    },
+    {
+      "id": "H5",
+      "name": "Gates catch real issues",
+      "result": "confirmed",
+      "evidence": "All 9 gates passed on first run. Build gate verified the new cmd/controller binary compiles. Lint gate confirmed no dead code or style violations across 24 new/modified files. Test gate validated all 66 tests pass including 7 new ones. Coverage gate identified new packages with lower coverage (nodestate 48.9%, policy 64.3%) — useful signal for Sprint 11 hardening."
+    },
+    {
+      "id": "H7",
+      "name": "Skills are followed by agents",
+      "result": "confirmed",
+      "evidence": "H7 audit: 5/5 instructions passed. (1) Modules communicate through Provider interface, not shared state. (2) CRD and node state tests use fake clients, no real cluster needed. (3) Node controller RBAC scoped to node patch + pod/event read only. (4) Composite provider tested in 3 modes (CRD-only, ConfigMap fallback, broken CRD fail-closed). (5) Controller logs all reconciliation actions; CRD validates and reports errors. See retro for full audit."
+    },
+    {
+      "id": "H11",
+      "name": "Flowstate works for greenfield projects",
+      "result": "confirmed",
+      "evidence": "Sprint 10 is the 11th sprint (0-10) on this greenfield project. The project now has CRD-based policy, a second binary (node state controller), and a Helm subchart. The process handled the largest single-sprint feature delivery (1555 LOC) without degradation."
+    }
+  ]
+}

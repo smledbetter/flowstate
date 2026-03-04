@@ -1,0 +1,73 @@
+{
+  "project": "nexa-scheduler",
+  "sprint": 16,
+  "label": "NS S16",
+  "phase": "Hardening + E2E Smoke Tests",
+  "metrics": {
+    "active_session_time_s": 1246,
+    "active_session_time_display": "20m 46s",
+    "total_tokens": 15173718,
+    "total_tokens_display": "15.2M",
+    "new_work_tokens": 549167,
+    "new_work_tokens_display": "549K",
+    "cache_hit_rate_pct": 96.4,
+    "opus_pct": 95.3,
+    "sonnet_pct": 2.6,
+    "haiku_pct": 2.0,
+    "api_calls": 181,
+    "subagents": 4,
+    "delegation_ratio_pct": 19.0,
+    "orchestrator_tokens": 12292256,
+    "subagent_tokens": 2881462,
+    "context_compressions": 1,
+    "rework_rate": 2.8,
+    "tests_total": 121,
+    "tests_added": 10,
+    "coverage_pct": 93.0,
+    "lint_errors": 0,
+    "gates_first_pass": true,
+    "gates_first_pass_note": "",
+    "loc_added": 870,
+    "loc_added_approx": false,
+    "task_type": "hardening",
+    "rework_rate_note": "2.8% — slight increase from 2.1%, still well within acceptable range",
+    "judge_score": null,
+    "judge_blocked": null,
+    "judge_block_reason": null,
+    "coderabbit_issues": null,
+    "coderabbit_issues_valid": null,
+    "mutation_score_pct": null
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "name": "3-phase sprint works across project types",
+      "result": "confirmed",
+      "evidence": "Sprint 16 used the 3-phase process for a hardening sprint (refactoring + test coverage recovery + smoke tests). Different task type than feature sprints, still followed the same THINK/EXECUTE/SHIP workflow successfully."
+    },
+    {
+      "id": "H5",
+      "name": "Gates catch real issues",
+      "result": "confirmed",
+      "evidence": "All 4 gates passed on first run. Continuous gate runs during implementation prevented regressions during the shared base extraction refactor. 121 tests passing, 0 lint errors."
+    },
+    {
+      "id": "H7",
+      "name": "Skills are followed by agents",
+      "result": "confirmed",
+      "evidence": "5/5 H7 instructions audited and passed. Existing tests survived refactor without modification (production-engineer). Interface isolation maintained (architect). Input validation preserved through refactor (security-auditor). Sprint scope fit single sprint (product-manager). Public API preserved (ux-designer)."
+    },
+    {
+      "id": "H8",
+      "name": "Coverage gate catches regressions",
+      "result": "confirmed",
+      "evidence": "Nodestate coverage recovered from 86.0% to 94.6% with 5 targeted tests. New shared base package at 78.9%. Overall coverage ~93%."
+    },
+    {
+      "id": "H11",
+      "name": "Flowstate works for greenfield projects",
+      "result": "confirmed",
+      "evidence": "Sprint 16 is the 17th sprint (0-16). Project has 121 unit tests + 22 smoke tests, 4 binaries, 3 milestones complete, and now a hardened codebase with reduced duplication."
+    }
+  ]
+}

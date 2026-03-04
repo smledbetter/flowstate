@@ -1,0 +1,66 @@
+{
+  "project": "nexa-scheduler",
+  "sprint": 9,
+  "label": "NS S9",
+  "phase": "Documentation",
+  "metrics": {
+    "active_session_time_s": 467,
+    "active_session_time_display": "7m 47s",
+    "total_tokens": 3453306,
+    "total_tokens_display": "3.5M",
+    "new_work_tokens": 243707,
+    "new_work_tokens_display": "243K",
+    "cache_hit_rate_pct": 92.9,
+    "opus_pct": 100.0,
+    "sonnet_pct": 0,
+    "haiku_pct": 0,
+    "api_calls": 56,
+    "subagents": 2,
+    "delegation_ratio_pct": 41.5,
+    "orchestrator_tokens": 2021090,
+    "subagent_tokens": 1432216,
+    "context_compressions": 0,
+    "rework_rate": 1.1,
+    "tests_total": 59,
+    "tests_added": 0,
+    "coverage_pct": 95,
+    "lint_errors": 0,
+    "gates_first_pass": true,
+    "gates_first_pass_note": "",
+    "loc_added": 912,
+    "loc_added_approx": false,
+    "task_type": "planning",
+    "judge_score": null,
+    "judge_blocked": null,
+    "judge_block_reason": null,
+    "coderabbit_issues": null,
+    "coderabbit_issues_valid": null,
+    "mutation_score_pct": null
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "name": "3-phase sprint works across project types",
+      "result": "confirmed",
+      "evidence": "Documentation-only sprint executed cleanly: plan mode identified 4 deliverables, subagents wrote them in parallel, all 7 gates passed first run. The 3-phase process works for non-code sprints."
+    },
+    {
+      "id": "H5",
+      "name": "Gates catch real issues",
+      "result": "confirmed",
+      "evidence": "All 7 gates passed on first run. Build/lint/test gates confirmed no code regressions from a docs-only sprint. Helm lint and smoke vet confirmed deployment artifacts remain valid."
+    },
+    {
+      "id": "H7",
+      "name": "Skills are followed by agents",
+      "result": "partially_confirmed",
+      "evidence": "H7 audit: 5/5 instructions applicable (all doc-focused). Threat model covers all attack surfaces with specific mitigations and code references. Quickstart has numbered steps, prerequisites, expected output, and cleanup. Architecture doc has 5 decision records. See retro for full audit."
+    },
+    {
+      "id": "H11",
+      "name": "Flowstate works for greenfield projects",
+      "result": "confirmed",
+      "evidence": "Sprint 9 is the 10th sprint (0-9) on this greenfield project. Documentation sprint produced 912 LOC of production docs in 7m 47s. The process scales from scaffolding to docs."
+    }
+  ]
+}
