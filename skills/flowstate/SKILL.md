@@ -19,6 +19,7 @@ This project uses the Flowstate sprint process. When the user says "go" (or any 
 - **Decisions**: `{FLOWSTATE}/decisions-pending.md` (ambiguities logged during sprints)
 - **Roadmap**: `docs/ROADMAP.md` (in this repo -- create if missing)
 - **Skills**: `.claude/skills/` (in this repo)
+- **Mission Control slug**: `flowstate` (used for MCP calls to update project dashboard)
 
 ## How to Determine the Next Sprint
 
@@ -261,14 +262,25 @@ If any script outputs to stdout in a pipeline (pipes to another process), it mus
 
 5. **Commit**: `git add -A && git commit -m "sprint N: [description]"`
 
-6. **Write next baseline** at `{FLOWSTATE}/metrics/baseline-sprint-{N+1}.md`:
+6. **Update Mission Control** (if `mcp__mission_control__update_project_status` is available):
+   - Call `mcp__mission_control__update_project_status` with:
+     - `slug`: `flowstate`
+     - `status`: "running" (or "complete" if this was the last phase in the roadmap)
+     - `next_step`: what the next sprint will build (from roadmap), or "Deploy and configure" if roadmap is done
+   - Call `mcp__mission_control__update_step` for the just-completed phase:
+     - `slug`: `flowstate`
+     - `step_title`: the phase title (match it to the step in Mission Control)
+     - `status`: "done"
+   - If the MCP server is unreachable, log a warning and continue — this is best-effort, never blocking.
+
+7. **Write next baseline** at `{FLOWSTATE}/metrics/baseline-sprint-{N+1}.md`:
    - Current git SHA, test count, coverage %, lint error count
    - Gate commands and current status
    - Quality audit uses the 4 fixed instructions above -- no rotation needed
 
-7. **Update roadmap**: mark this phase done in `docs/ROADMAP.md`, update Current State section
+8. **Update roadmap**: mark this phase done in `docs/ROADMAP.md`, update Current State section
 
-8. **Write progress file** at `{FLOWSTATE}/progress.md`:
+9. **Write progress file** at `{FLOWSTATE}/progress.md`:
    - **First, read the existing `{FLOWSTATE}/progress.md`** (if it exists) to extract the accumulated Learnings section. Do not skip this step — learnings compound across sprints and losing them degrades future sprint quality.
    - Then write the new progress.md with:
      - What was completed this sprint (list of deliverables)
@@ -279,7 +291,7 @@ If any script outputs to stdout in a pipeline (pipes to another process), it mus
      - **Learnings** (accumulated): copy ALL prior learnings from the old progress.md, then append new ones from this sprint. Patterns that worked, pitfalls to avoid, framework quirks. This section only grows — never remove entries unless they're proven wrong.
    This is operational state for the next agent session, not analysis.
 
-9. **Completion check** -- print this checklist with [x] or [MISSING] for each:
+10. **Completion check** -- print this checklist with [x] or [MISSING] for each:
    - `{FLOWSTATE}/metrics/sprint-N-metrics.json` exists (raw MCP metrics response)
    - `{FLOWSTATE}/metrics/sprint-N-import.json` exists (complete import-ready JSON, validated via MCP dry_run)
    - `{FLOWSTATE}/retrospectives/sprint-N.md` contains:
@@ -290,6 +302,7 @@ If any script outputs to stdout in a pipeline (pipes to another process), it mus
    - `{FLOWSTATE}/progress.md` written (current state for next session)
    - `docs/ROADMAP.md` updated (phase marked done, Current State refreshed)
    - Sprint code committed
+   - Mission Control updated (status + step marked done), or "MCP unavailable" if server unreachable
    Fix any MISSING items before declaring done.
 
 **This sprint is now complete.** If you are running as a subagent, return control to the orchestrator. Do NOT proceed to Auto-Continue — that section runs ONLY in the main orchestrator session.
@@ -301,7 +314,7 @@ If any script outputs to stdout in a pipeline (pipes to another process), it mus
 After Phase 3 completes, check whether to continue:
 
 1. Read `docs/ROADMAP.md`. Is there a next phase not marked done?
-   - **No** → All phases complete. Say "Roadmap complete. N sprints run." and stop.
+   - **No** → All phases complete. Update Mission Control: `mcp__mission_control__update_project_status` with slug="flowstate", status="complete". Say "Roadmap complete. N sprints run." and stop.
    - **Yes** → Continue to step 2.
 
 2. Check the retro just written. Does it contain change proposals (diffs with `- Before` / `+ After`)?
