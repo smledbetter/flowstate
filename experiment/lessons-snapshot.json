@@ -1,0 +1,1739 @@
+[
+  {
+    "id": 49,
+    "text": "**Retry pattern for Matrix API calls**: use a while loop with attempt counter, sleep with linear backoff (attempt * 2 seconds), and classify errors (TOKEN_EXPIRED vs NETWORK_ERROR) for appropriate handling.",
+    "category": "framework",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 13,
+    "text": "**Conduit v0.10.12 supports Matrix client versions up to v1.12.**",
+    "category": "tooling",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 2,
+    "text": "`docker compose config --quiet` produces a TS_AUTHKEY warning when `.env` is missing (expected locally, `.env` exists on server).",
+    "category": "framework",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 3,
+    "text": "`docker compose build` says \"no services to build\" since all services use pre-built images.",
+    "category": "framework",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 4,
+    "text": "The tailnet domain is hardcoded in docker-compose.yml (`ntfy.tail5f8461.ts.net`). New services use the same tailnet with different hostnames.",
+    "category": "framework",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 5,
+    "text": "Each Tailscale sidecar container needs its own state volume and hostname for a unique cert.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 6,
+    "text": "Shell scripts use `#!/usr/bin/env bash` + `set -euo pipefail`.",
+    "category": "tooling",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 7,
+    "text": "Matrix replaces ntfy entirely. Element on iOS provides push notifications natively.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 8,
+    "text": "mjknowles/matrix-mcp-server supports send-message, get-room-messages, send-direct-message but has no real-time polling (on-demand queries only).",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 9,
+    "text": "Conduit can reach public push gateways for Element iOS push notifications even behind Tailscale.",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 10,
+    "text": "**TS_AUTHKEY must be reusable when multiple Tailscale sidecars share it.**",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 11,
+    "text": "**Conduit requires `CONDUIT_DATABASE_PATH` even with env-var-only config.**",
+    "category": "tooling",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 12,
+    "text": "**Use `curl -s` (not `curl -sf`) when checking API responses that may be 4xx.**",
+    "category": "framework",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 48,
+    "text": "**Stale tmux session detection**: `os.kill(pid, 0)` raises `ProcessLookupError` if the process is dead. `PermissionError` means the process exists but we cannot signal it. This is a zero-cost check that integrates into the existing python block in aether-sessions.",
+    "category": "framework",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 14,
+    "text": "**Element iOS requires MAS for account creation.** Must use curl API with `m.login.dummy`. Sign-in works fine.",
+    "category": "framework",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 15,
+    "text": "**Use sed to toggle docker-compose.yml values for temporary config changes.**",
+    "category": "framework",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 16,
+    "text": "**The setup-conduit script's first user is the Conduit admin.**",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 17,
+    "text": "**matrix-mcp-server uses StreamableHTTP transport (not stdio).** Requires `Accept: application/json, text/event-stream` header. Responds with SSE `event: message` + `data:` format.",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 18,
+    "text": "**MCP protocol requires sequential requests per session.** Cannot batch init + notification + tool call. Each must be a separate HTTP request (stateless mode -- no session ID returned).",
+    "category": "performance",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 19,
+    "text": "**matrix-mcp-server with ENABLE_OAUTH=false requires 3 headers**: `matrix_user_id`, `matrix_homeserver_url`, `matrix_access_token`. No Authorization header needed.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 20,
+    "text": "**Client caching in matrix-mcp-server**: clients cached by userId:homeserverUrl with 15-min TTL. Repeated tool calls reuse the same Matrix client.",
+    "category": "tooling",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 21,
+    "text": "**20 Matrix tools available**: list-joined-rooms, get-room-info, get-room-members, get-room-messages, get-messages-by-date, identify-active-users, get-user-profile, get-my-profile, get-all-users, search-public-rooms, get-notification-counts, get-direct-messages, send-message, send-direct-message, create-room, join-room, leave-room, invite-user, set-room-name, set-room-topic.",
+    "category": "tooling",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 22,
+    "text": "**Aether room ID**: !TAiZX4d0KDKJIPDWZY5A1U7_L2jHQnavUf9JbZWmq0Y",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 23,
+    "text": "**Process liveness checks should poll the actual service endpoint**, not use `kill -0` which races with Node.js initialization.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 24,
+    "text": "**MCP server's get-room-messages lacks `since` parameter.** Use the raw Matrix `/sync` API for polling. It supports `since` tokens for incremental sync natively.",
+    "category": "framework",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 36,
+    "text": "**For `eval` + python3 JSON extraction**: have python generate `variable='escaped_value'` assignments. Declare all locals before the eval. Add `# shellcheck disable=SC2034` for variables that shellcheck can't trace through eval. The single-quote escaping in python (`replace(\"'\", \"'\\\\''\")`) prevents injection.",
+    "category": "framework",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 37,
+    "text": "**Test helpers building JSON should use environment variables**, not shell interpolation into python code. Bash `false`/`true` are not valid Python; `os.environ` + `.lower() == \"true\"` is the safe conversion pattern.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 26,
+    "text": "**Shell scripts that process JSON should use `exec python3`** -- bash shebang for shellcheck compliance, then exec python3 for the actual logic. Avoids all quoting issues with `!`, `$`, backticks in message content.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 27,
+    "text": "**Pass data to embedded python via environment variables**, not string interpolation. Triple-quoted strings (`'''...'''`) break if content contains `'''`.",
+    "category": "framework",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 28,
+    "text": "**Shellcheck directive comments must be on a separate line.** `# shellcheck disable=SC2016 -- reason` does not parse. Use two lines: comment, then directive.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 29,
+    "text": "**Matrix `/sync` API incremental polling**: pass `since=<next_batch>` to get only new events. `timeout=0` for non-blocking, `timeout=N` (ms) for long-polling. Filter param reduces response size.",
+    "category": "performance",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 30,
+    "text": "**State files for polling live in `~/.local/state/aether/`**: `sync-token` (Matrix sync position), `seen-events.log` (dedup tracking).",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 31,
+    "text": "**tmux `-F` format strings print `\\t` literally, not as a tab.** Use `|` as field separator in format strings.",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 32,
+    "text": "**Always use \"session:\" (colon suffix) as tmux target** to force session-name-only matching. Without it, `-t claude` can match a pane running the command \"claude\" in another session instead of the session named \"claude\". This is a critical disambiguation pitfall.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 33,
+    "text": "**`tmux capture-pane -S -N` means \"start N lines into scrollback\"**, not \"last N lines.\" For last N lines, capture the full pane and pipe through `tail -n N`.",
+    "category": "tooling",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 34,
+    "text": "**Use `exec python3 << 'PYEOF'` heredoc** instead of `exec python3 -c '...'` for embedded python. The heredoc has zero escaping issues with f-strings, braces, or quotes. The single-quoted `-c` variant causes brace conflicts with python format strings.",
+    "category": "framework",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 35,
+    "text": "**Temporary tmux sessions for testing**: create with `tmux new-session -d -s \"name\" \"bash\"`, clean up with EXIT trap calling `tmux kill-session -t \"name:\"`. PID-based names (`aether-test-$$`) ensure no collisions.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 85,
+    "text": "User is on a Linux VPS, no Mac -- React Native was wrong fit, PWA is correct",
+    "category": "framework",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 25,
+    "text": "**Bash `echo` escapes `!` in double-quoted strings** due to history expansion in interactive mode. Use `printf '%s\\n'` or `exec python3` instead when handling JSON with special characters.",
+    "category": "framework",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 38,
+    "text": "**`AETHER_DRY_RUN=1` enables testing without Matrix sends.** Supported by aether-format, aether-router, claude-approve-matrix, and claude-notify-matrix. Essential for integration tests that verify logic without side effects.",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 39,
+    "text": "**`AETHER_CAPTURE_WAIT=N` controls dispatch-to-capture delay.** Default 2s for production; tests can use 1s for faster execution without changing default behavior.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 40,
+    "text": "**aether-sessions `--pretty` output is a formatted table.** Use `code \"text\"` format (not `status`) when relaying to Matrix for correct monospace rendering.",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 41,
+    "text": "**Claude Code PermissionRequest hook uses `hookSpecificOutput` with `decision.behavior` (allow/deny).** This is different from PreToolUse which uses `permissionDecision` (allow/deny/ask). The old top-level `decision` format is deprecated for PreToolUse.",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 42,
+    "text": "**State file for inter-process approval signaling**: `~/.local/state/aether/pending-approval`. The approval script writes the event ID when it posts, the router writes \"allow\" or \"deny\" when `/approve` or `/deny` is received, and the approval script polls this file alongside the Matrix /sync API.",
+    "category": "framework",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 43,
+    "text": "**Background process + state file is a reliable test pattern**: start the approval script in background, wait for the state file to appear, write the decision, wait for the process to exit, check the output. PID-based temp files (`/tmp/aether-approve-result-$$`) prevent collisions.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 44,
+    "text": "**`AETHER_APPROVE_TIMEOUT` controls approval timeout** (default 120s). Use short values (1-2s) in tests.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 45,
+    "text": "**`docker compose down --remove-orphans` cleans up containers from services removed from the compose file.** Without `--remove-orphans`, the old containers keep running even though they are no longer defined.",
+    "category": "framework",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 46,
+    "text": "**`grep -c` returns exit code 1 when count is 0** (no matches). With `set -o pipefail`, this causes `$(tail | grep -c)` to fail. Use process substitution: `grep -c 'pattern' <(tail ...)` with `|| RESULT=0` to handle this safely.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 47,
+    "text": "**Structured logging to a file**: use a `log()` function that writes `[timestamp] [component] [level] message` to both stderr and a log file. The log file at `~/.local/state/aether/logs/aether.log` provides history for debugging.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 1,
+    "text": "The ntfy Tailscale sidecar pattern works well: `network_mode: service:ts-<name>` shares the network namespace so the service gets the sidecar's Tailscale IP and HTTPS cert.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "aether",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 50,
+    "text": "System Python on this VPS uses PEP 668 (externally-managed) \u2014 must use `.venv/` for all pip installs",
+    "category": "tooling",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 51,
+    "text": "pytest exit code 5 means \"no tests collected\" \u2014 not a failure, but gates will report it until Sprint 1 adds tests",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 52,
+    "text": "SQLite strips timezone info from DateTime columns \u2014 in tests, compare with `.replace(tzinfo=None)` or use naive datetimes",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 53,
+    "text": "In-memory SQLite (`sqlite:///:memory:`) works well for model tests \u2014 fast, no cleanup needed",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 54,
+    "text": "Test code was 67% of total LOC (497/739) \u2014 budget accordingly for future sprints",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 55,
+    "text": "Coverage gate can silently fail if utility/infrastructure modules have no direct tests \u2014 always check coverage report per-file, not just the total",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 56,
+    "text": "In-memory SQLite with `sessionmaker` creates new connections per session \u2014 use `StaticPool` from `sqlalchemy.pool` to ensure all sessions share the same connection, otherwise tables created on one connection are invisible to others",
+    "category": "performance",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 57,
+    "text": "FastAPI query params don't handle complex types (list of Pydantic models) well \u2014 use JSON body with a Pydantic schema for PATCH endpoints with structured payloads",
+    "category": "framework",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 58,
+    "text": "Test code ratio climbed to 73% in Sprint 2 (334/456) \u2014 integration tests with HTTP clients are more verbose than unit tests",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 59,
+    "text": "Test code ratio held at 73% in Sprint 3 (385/531) \u2014 consistent with Sprint 2 pattern for integration tests",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 60,
+    "text": "Validate all inputs before any DB writes for atomicity \u2014 checking option_ids belong to the poll before upsert ensures no partial state on error",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 61,
+    "text": "Existing Pydantic schemas (PollRespond, ResponseCreate) from Sprint 1 saved significant time \u2014 front-loading schema design pays off",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 62,
+    "text": "Gates passing first try correlates with following established patterns (StaticPool, naive datetimes, ruff-clean imports)",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 63,
+    "text": "FastAPI TestClient serves StaticFiles and FileResponse without special setup \u2014 no need for extra test configuration for static file tests",
+    "category": "tooling",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 64,
+    "text": "Frontend sprint test ratio drops (20%) because CSS/HTML/JS are bulk LOC but tested via HTTP response content assertions",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 65,
+    "text": "When JS uses variable concatenation (API_BASE + \"/polls\"), test assertions should check for the variable/base, not the concatenated literal",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 66,
+    "text": "IIFE pattern in vanilla JS keeps global scope clean without a build step \u2014 good pattern for CSP-safe frontends",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 67,
+    "text": "Existing API endpoints (results, PATCH, DELETE) can be reused directly by new frontend features \u2014 no backend changes needed for Sprint 5",
+    "category": "framework",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 68,
+    "text": "Admin mode detection via URL path + query param (`/poll/{id}/admin?key={secret}`) works well for client-side gating without extra backend auth middleware",
+    "category": "tooling",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 69,
+    "text": "Results grid with color-coded cells requires overflow-x scrolling wrapper for mobile responsiveness",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 70,
+    "text": "Test ratio for frontend sprints with admin features was 35% (319/912) \u2014 admin integration tests are more compact than form validation tests",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 71,
+    "text": "Protocol-based DI (ICalFetcher, GoogleCalendarAPI) makes calendar code fully testable without real HTTP/API calls \u2014 define a Protocol, accept it as optional parameter, default to real implementation",
+    "category": "framework",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 72,
+    "text": "`icalendar` library's `Calendar.from_ical()` returns walkable components \u2014 use `component.name == \"VEVENT\"` to filter events",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 73,
+    "text": "Google Calendar API returns dates as either `dateTime` (ISO format) or `date` (date-only) in start/end objects \u2014 handle both with a fallback parser",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 74,
+    "text": "`datetime.fromisoformat()` in Python 3.12 handles \"Z\" suffix correctly \u2014 no need for manual replacement",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 75,
+    "text": "When patching imports used inside methods (lazy imports like `from googleapiclient.discovery import build`), patch the original module path (`googleapiclient.discovery.build`) not the importing module (`src.calendar_google.build`)",
+    "category": "framework",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 76,
+    "text": "Shared dataclass (BusyPeriod) across calendar modules avoids duplication and simplifies the unified checker",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 77,
+    "text": "Calendar integration test via route requires patching `src.routes.check_availability` (where it's imported), not `src.calendar_service.check_availability`",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 78,
+    "text": "FakeGoogleCalendarAPI test double (tracking created/deleted events in lists) is simpler and more readable than MagicMock for protocol-based DI testing \u2014 use it when the protocol has few methods",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 79,
+    "text": "Extending an existing Protocol with new methods (create_event, delete_event) requires adding them to both the Protocol class and the real client \u2014 but existing tests don't break since Protocol checking is structural",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 80,
+    "text": "Calendar write operations should always be wrapped in try/except at the route level \u2014 a Google API failure should never prevent a poll response from being saved",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 81,
+    "text": "The `if body.close and not poll.closed` guard prevents double-finalization when PATCH is called multiple times with `close: True`",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 82,
+    "text": "Starlette middleware (BaseHTTPMiddleware) with instance-level state persists across TestClient instances \u2014 use module-level state with a reset function for test isolation when middleware is attached to the app singleton",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 83,
+    "text": "Pydantic field_validators are the cleanest place to apply input sanitization \u2014 zero route changes needed, validates at deserialization time",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 84,
+    "text": "In-memory rate limiting with module-level dict + monotonic timestamps is sufficient for single-process deployments; for multi-worker setups, use Redis or similar",
+    "category": "performance",
+    "confidence": 0.5,
+    "source_project": "rendezvous",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 169,
+    "text": "Reporter profiles parse cleanly from markdown using section headers. Store as `## Interview Style`, `## Knowledge Domain` etc. The `_parse_reporter_profile` function maps `## headings` to dict keys (lowercased).",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 86,
+    "text": "User prefers continuous execution (\"go\" means keep going)",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 87,
+    "text": "Git author: `-c user.name=\"Steven M. Ledbetter\" -c user.email=\"smledbetter@gmail.com\"`",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 88,
+    "text": "fake-indexeddb is required in Vitest setup for any Dexie.js tests",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 89,
+    "text": "iOS Safari can evict IndexedDB after ~7 days non-use -- not a problem for a daily gardening app",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 90,
+    "text": "**fake-indexeddb ConstraintError bug**: Sequential `db.table.add()` calls fail for objects with many fields (>3) in vitest. Use `bulkAdd([...])` for tests that insert multiple records. Works fine outside vitest and in production. Root cause: structuredClone interaction in fake-indexeddb ESM build under vitest's module system.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 91,
+    "text": "**vite-plugin-pwa peer deps**: v1.2 doesn't declare Vite 8 compatibility. Install with `--legacy-peer-deps`. Works fine at runtime.",
+    "category": "tooling",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 92,
+    "text": "**Playwright device config**: `devices[\"iPhone SE\"]` uses WebKit. Use explicit `browserName: \"chromium\"` with mobile viewport to avoid installing WebKit.",
+    "category": "tooling",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 93,
+    "text": "**DAO factory pattern**: `createSeedDAO(db)` with default parameter works well for test isolation. Tests pass a fresh DB instance; app code uses the default singleton. Components accept optional `db` prop for the same reason.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 94,
+    "text": "**Coverage exclusions**: `src/types/index.ts` shows 0% coverage because it contains only type declarations (no runtime code). This is expected and doesn't affect the threshold because the file has zero coverable statements.",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 95,
+    "text": "**eslint react-hooks/set-state-in-effect**: React 19 eslint rules prohibit calling setState-returning functions directly inside useEffect. Instead of `useEffect(() => { loadData(); }, [])`, use a pattern like `useEffect(() => { dao.getAll().then(setData); }, [dep])` or a `refreshKey` state variable to trigger re-fetches. Also: do NOT call `setLoading(true)` at the top of a useEffect body -- initialize `useState(true)` instead and only set `false` in the async callback.",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 96,
+    "text": "**findByText ambiguity**: When a heading and a button share the same text (e.g., \"Add Seed\"), `findByText` throws for multiple matches. Use `findByRole(\"heading\", { name: \"Add Seed\" })` to disambiguate.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 108,
+    "text": "**Injectable fetchFn for weather tests**: Pass `fetchFn` parameter to weather functions and components to mock API calls in tests. Never hit Open-Meteo in unit/component tests. Use `vi.fn().mockResolvedValue(...)` to return controlled responses.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 109,
+    "text": "**Weather cache entry in Dexie**: `cacheWeatherData` writes a `__weather_cache` entry to weatherSnapshots table. Tests that count weather snapshots after planting check-off must filter by `date !== \"__weather_cache\"` to exclude the cache entry.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 98,
+    "text": "**Component testing with Dexie**: Pass `db` as a prop to components, create fresh `SowWhatDB` instances per test suite, clean up with `Dexie.delete(dbName)` in afterEach. Wrap components in `createMemoryRouter` + `RouterProvider` for routing context.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 99,
+    "text": "**`today` prop for date-dependent components**: Components that filter by today's date should accept an optional `today` prop (ISO string) for deterministic tests. Production code omits the prop and uses `todayISO()` default.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 100,
+    "text": "**E2E date-based tests**: Use dynamic date ranges (today +/- N days) in E2E tests to avoid test rot as the calendar progresses. Don't hardcode specific dates in E2E.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 101,
+    "text": "**Playwright rebuild required**: When E2E tests can't find new UI elements, the production build is likely stale. Run `npm run build` before `npx playwright test` after code changes.",
+    "category": "framework",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 102,
+    "text": "**SeedDetail form labels are generic**: The form uses \"Start\"/\"End\"/\"Min\"/\"Max\" labels inside section headings (\"Cold Sow Window\", \"Direct Sow Window\", \"Soil Temperature\"). In E2E tests, use positional selectors like `getByRole(\"textbox\", { name: \"Start\" }).first()` to disambiguate.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 103,
+    "text": "**No Claude Code session logs**: The project path `/home/dev/projects/Sow What` (with space) doesn't map to any session log directory. Metrics that require session logs will be null.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 104,
+    "text": "**waitFor with async Dexie assertions**: When testing component state backed by Dexie writes (e.g., check-off creating a planting), wrap the assertion in `waitFor(async () => { ... })` because the DB write is async and the component re-renders after the promise resolves.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 105,
+    "text": "**Stale stub assertions**: When replacing a placeholder page with a real implementation, check App.test.tsx route shell tests for hardcoded stub text that needs updating.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 106,
+    "text": "**db? ternary branch coverage**: Functions that accept optional `db` parameter have uncovered else branches (default DB path) since tests always pass explicit DB. This is expected and doesn't warrant coverage workarounds -- the pattern is sound for production vs test isolation.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 107,
+    "text": "**E2E strict mode violations with shared text**: When a page has both a heading/label AND a navigation button with the same text (e.g., \"Planted\", \"Cold Sow\"), `getByText()` in Playwright resolves to multiple elements. Use `getByRole(\"heading\", { name: ... })` for headings or scope with `getByRole(\"list\", { name: ... }).getByText(...)` for list content.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 145,
+    "text": "`type: ignore[union-attr]` on Anthropic response `.content[0].text` is unnecessary when the client parameter is typed as `Any` -- mypy doesn't check attribute chains on `Any`.",
+    "category": "tooling",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 146,
+    "text": "For chained operations (Y0->Y1->Y3->Y5->Y10), a simple dict mapping `{1: 0, 3: 1, 5: 3, 10: 5}` is cleaner and more testable than computing the previous year dynamically.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 110,
+    "text": "**Playwright getByText substring matching**: `getByText(\"Weather\")` matches \"Loading weather...\" as well (substring). Use `getByRole(\"heading\", { name: \"Weather\" })` for exact heading matches.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 111,
+    "text": "**Async planting creation in E2E**: After Sprint 6, `createPlantingRecord` includes a network fetch (Open-Meteo). E2E tests that click to check off a seed must wait for visual confirmation (opacity CSS change or line-through) before navigating away, otherwise the planting may not be saved yet.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 112,
+    "text": "**Branch coverage is tight**: At 85.78% vs 85% floor, new code should target >90% branches. Pre-existing pages (Seeds.tsx 71%, Planted.tsx 79%) pull the average down. Adding tests for previously untested modules (like bootstrap.ts) is the most efficient way to raise the floor.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 113,
+    "text": "**vi.mock with module-level singletons**: When a module imports a singleton at the top level (like `import { seedDAO } from \"./seeds.ts\"`), use `vi.mock(\"./module\")` with factory function and extract mock fns to module scope. Call `vi.resetAllMocks()` in beforeEach to reset call counts between tests.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 114,
+    "text": "**sessionStorage for auth state, not module variables**: In-memory `let authenticated` module variables are reset on every full page navigation (page.goto in Playwright, browser refresh). Use `sessionStorage` for auth state that needs to survive within a browser session. sessionStorage is cleared when the tab closes, which is the correct behavior for PIN auth.",
+    "category": "performance",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 115,
+    "text": "**E2E tests need loginWithPin helper**: After adding PIN auth, every E2E test must call `loginWithPin(page)` before accessing protected routes. The clearDB helper should also clear sessionStorage.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 116,
+    "text": "**PIN pad keyboard support**: Use `tabIndex={-1}` on the container div with `onKeyDown` and auto-focus via ref after loading. Test keyboard input by clicking a button first (keyDown events bubble from focused button to container).",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 117,
+    "text": "**onDownloadCsv prop for testable exports**: Settings component accepts an `onDownloadCsv` prop to override `downloadCsv` in tests. This avoids DOM manipulation (creating/clicking anchor elements) in test environment.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 118,
+    "text": "**Do NOT precache seeds.csv in service worker**: Adding `csv` to workbox `globPatterns` causes the SW to serve seeds.csv from cache, bypassing Playwright's `page.route` interception. This breaks E2E test isolation because `clearDB` can't block the bootstrap CSV fetch. Keep CSV out of precache; the bootstrap already handles offline (silently skips on fetch error).",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 119,
+    "text": "**Offline E2E testing**: Use `context.setOffline(true)` in Playwright to test offline behavior. Give the service worker ~3s after initial page load to finish precaching before going offline. Avoid `navigator.serviceWorker.controller` wait -- it can time out.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 133,
+    "text": "Watch for unused imports in test files -- importing `time` when using `patch(\"module.time.sleep\")` instead is a common ruff catch.",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 122,
+    "text": "venv pyc files were almost committed -- .gitignore is essential before first real commit.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 123,
+    "text": "Quote corpus agents work well in parallel (10 concurrent) -- good pattern for future data assembly tasks.",
+    "category": "performance",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 124,
+    "text": "User preference: prioritize candid quotes (leaked emails, depositions, unscripted moments) over prepared remarks. The engine needs real psychology, not PR.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 125,
+    "text": "`types-requests` must be in dev dependencies for mypy --strict to pass on code importing `requests`. Added to pyproject.toml.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 126,
+    "text": "mypy --strict flags `json.loads()` return as `Any` -- assign to a typed intermediate variable (`data: dict[str, Any] = json.loads(...)`) to satisfy it.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 127,
+    "text": "mypy --strict flags `resp.status_code == 200` as returning `Any` when used as a bool return -- wrap in explicit `bool()`.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 128,
+    "text": "Coverage config in `pyproject.toml` addopts must include every package with code (`--cov=engine --cov=vast`). Update this as new packages get code.",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 129,
+    "text": "Architecture doc pseudocode is an excellent reference spec for implementation. Read the relevant section before starting a sprint.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 130,
+    "text": "For subprocess-heavy code, mock at `module.subprocess.run` level and use `side_effect` lists for multi-call sequences. Works cleanly with `time.monotonic` mocking for polling loops.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 131,
+    "text": "For OpenAI-compatible client testing, mock `client._client` (the OpenAI instance) directly. Use `side_effect` lists for retry sequences (e.g., [APIConnectionError, mock_response]).",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 132,
+    "text": "`openai.APIConnectionError` and `openai.APITimeoutError` are the right exceptions to catch for retry logic. They both accept `request=MagicMock()` in tests.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 120,
+    "text": "**PIN status is aria-label, not visible text**: The PIN dots status div uses `aria-label` for the digit count. In E2E, use `getByRole(\"status\", { name: \"...\" })` not `getByText(...)`.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 121,
+    "text": "macOS resource fork files (._*) cause ruff E902 errors. Always check for and delete them. .gitignore now excludes them.",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 135,
+    "text": "`textstat` has no py.typed marker -- use `# type: ignore[import-untyped]` on import for mypy --strict.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 136,
+    "text": "Cosine similarity measures angle, not magnitude. Vectors with similar dominant dimensions (e.g., sentence length, readability both positive and large) will have high cosine similarity even if individual feature values differ significantly. Don't write tests expecting low cosine sim just because feature values look \"different.\"",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 137,
+    "text": "For Anthropic SDK mocking, mock `client.messages.create` and return a mock with `.content[0].text` structure. Check `call_args[1]` for keyword args.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 138,
+    "text": "Hedge counting needs both token-level (single words) and phrase-level (multi-word) matching. Lowering text once and reusing is efficient.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 139,
+    "text": "When `build()` loads decay params internally, tests using tmp_path for data_dir need fallback behavior -- don't hard-fail on missing files when computed values suffice. Added `_fallback_decay_params()` for graceful degradation.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 140,
+    "text": "Persona directory mapping (`_SUBJECT_DIRS`) from prompt_builder.py can be imported and reused in calibration/loop.py to keep persona directory mapping consistent across modules.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 141,
+    "text": "Monotonicity invariant tests (empathy decreasing, dehumanization increasing across years) are an excellent way to verify decay computation correctness for all 10 subjects at once.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 142,
+    "text": "Pydantic `dict[str, object]` satisfies mypy --strict better than bare `dict` for model fields that hold arbitrary data (metadata, reasoning, generation_params).",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 143,
+    "text": "Use `datetime.now(timezone.utc)` instead of `datetime.utcnow()` -- the latter is deprecated and doesn't attach timezone info.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 144,
+    "text": "When comparing strings against lowered text (`lower_text`), ALL comparison markers must also be lowercase. Mixed-case markers like `\"as an AI\"` won't match against `text.lower()`. This is an easy bug to miss because the intent seems correct.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 157,
+    "text": "Extracting a shared `_run_iteration()` helper when two methods (historical and forward calibration) share the same generate-score-mine loop eliminates duplication cleanly.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 158,
+    "text": "For accept/reject refinement gating, a single-gate quick evaluation (runs=1) is sufficient to detect catastrophic regressions without burning full scoring budget.",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 147,
+    "text": "Prompt caching with JSON sidecar files (PromptVersion) is a clean pattern: .md for the prompt text, .json for metadata. Version numbering via glob + parse is simple and robust.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 148,
+    "text": "mypy --strict rejects `int(value)` when `value: object` -- use explicit `isinstance` checks (int, float, str) before converting. A bare `type: ignore[arg-type]` is fragile; the isinstance pattern is self-documenting.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 149,
+    "text": "For judge JSON parsing, reuse the code-fence stripping pattern from voice.py's `_parse_score`. Consistent pattern across modules reduces cognitive load.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 150,
+    "text": "`statistics.mean()` with `round()` uses banker's rounding (round-half-even). For averaging scores 0-3, this is fine -- mean([2,3]) = 2.5 -> 2, not 3. Tests must account for this.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 151,
+    "text": "VoiceMatcher integration in Judge: pass the matcher as a constructor dependency, call it in `evaluate_gate()` only when both matcher AND reference_quotes are provided. Clean null-object pattern.",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 152,
+    "text": "ICC(3,1) computation needs at least 2 pairs and 2 ratings per pair. For single-pair edge case, return 0.0 rather than erroring -- the caller gets a \"not enough data\" signal.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 153,
+    "text": "Don't speculatively import datetime/timezone unless actually used in the file. ruff catches unused imports that mypy doesn't flag.",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 154,
+    "text": "Gate model `rubric` is a required field, but calibration loads rubric separately from scoring.md (not per-gate). Pass `rubric=\"\"` when constructing Gate objects from prompts.md parsing.",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 155,
+    "text": "When adding a new package (calibration/), remember to update BOTH pyproject.toml (addopts --cov=calibration) AND CLAUDE.md gate commands (mypy --strict path list).",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 156,
+    "text": "ruff catches unused variables (F841) even when the assignment pattern looks intentional (best_prompt tracking). If the variable is never read, ruff flags it. Either use it or remove it.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 193,
+    "text": "Pluggable stop_check callable (Optional[Callable[[], bool]]) is a clean pattern for external shutdown signals in long-running loops. Defaults to lambda: False.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 97,
+    "text": "**CSV parsing**: Pure string manipulation works fine for CSV (no library needed). Handle quoted fields with commas, escaped quotes, and Windows line endings. Use `bulkAdd` for batch import.",
+    "category": "performance",
+    "confidence": 0.5,
+    "source_project": "sow-what",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 159,
+    "text": "Test helper functions like `_create_validated_state()` that set up state + eval + prompt files for multiple test classes are worth building early -- trajectory and forward calibration tests all reuse them.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 160,
+    "text": "When `_mine_highlights` runs inside `_run_iteration`, it receives the single aggregated evaluation from `evaluate_gate` (which internally averages N runs). The highlight criteria still apply to the averaged result.",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 161,
+    "text": "When metadata dict has `dict[str, object]` type, `.get(\"key\", 0)` returns `object`, not `int`. mypy --strict rejects comparison operators on `object`. Extract to a variable and use `isinstance` check before comparing.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 162,
+    "text": "`# type: ignore[union-attr]` on Anthropic `response.content[0].text` is unnecessary when client is typed `Any`. mypy skips attribute chains on `Any`. Remove the ignore to avoid ruff/mypy \"unused ignore\" warnings.",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 163,
+    "text": "For orchestrator integration tests, mock InferenceClient and PromptBuilder at the spec level. Use `side_effect` lists on `mock_inference.generate` to provide per-call responses. This keeps tests fast (~4s for 73 tests) while verifying wiring.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 164,
+    "text": "Atomic checkpoint pattern: write to .tmp file, then rename. This prevents corrupted checkpoints on crash. Python's `Path.rename()` is atomic on POSIX.",
+    "category": "framework",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 165,
+    "text": "When writing resume logic for conversations, track \"already completed\" items (years, message indices) via metadata fields and skip them. This avoids regenerating existing content.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 166,
+    "text": "ruff catches unused imports even in test files where you import a type just for readability (e.g., `PromptSnapshot`, `CheckpointError`). Only import what you actually reference in assertions or calls.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 167,
+    "text": "For Claude features (interview, article, deflection), accept `anthropic_client: Any = None` as a constructor param. Gate it at call time (`_claude_generate` raises if None). This keeps the Orchestrator usable without Claude for non-Claude scenarios.",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 168,
+    "text": "Cross-temporal scenarios can delegate to debate mechanics -- the format template (loaded by PromptBuilder based on ScenarioType) handles the behavioral difference. Avoid duplicating runner code when the only difference is the prompt.",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 181,
+    "text": "ChromaDB's `metadatas` param has a complex union type that `dict[str, Any]` doesn't satisfy for mypy --strict. Use `# type: ignore[arg-type]` on the upsert/add call.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 182,
+    "text": "ChromaDB's `where` filter dict doesn't satisfy mypy's `Where` type. Type the variable as `Any` to bypass.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 171,
+    "text": "For Confrontation scenarios, cap rounds at `min(scenario.rounds, len(scenario.evidence))` to avoid index errors when rounds exceeds evidence count.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 172,
+    "text": "When CLI commands import heavy modules (VastManager, CalibrationLoop), use local imports inside the command function so the CLI stays fast and testable without those dependencies loaded.",
+    "category": "tooling",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 173,
+    "text": "For Click CLI testing with lazy imports, patch at the source module (`vast.manager.VastManager`), NOT at the consumer (`cli.VastManager`). Local imports inside functions don't create module-level attributes.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 174,
+    "text": "`types-PyYAML` must be in dev dependencies for mypy --strict to pass on code importing `yaml`. Same pattern as `types-requests`.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 175,
+    "text": "Click's CliRunner is excellent for testing -- 78 CLI tests run in ~4 seconds with zero subprocess calls. Use `runner.invoke(app, [...])` and check `result.exit_code` + `result.output`.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 176,
+    "text": "When adding a single-file module (cli.py) to coverage, use `--cov=cli` in pyproject.toml addopts. pytest-cov handles single files the same as packages.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 177,
+    "text": "`yaml.safe_load(\"\")` returns None, not an empty dict. The `or {}` pattern silently converts it to a dict, bypassing \"not a mapping\" checks. Test for None explicitly before the fallback.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 178,
+    "text": "For YAML scenario loading, default `id` and `name` to the filename stem -- callers often reference scenarios by filename rather than by an explicit id field.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 179,
+    "text": "The `type: ignore[union-attr]` on Anthropic response `.content[0].text` is unnecessary when the anthropic_client param is typed `Any`. mypy --strict catches unused ignores as errors.",
+    "category": "tooling",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 180,
+    "text": "ChromaDB's ephemeral `Client()` shares state within a process. Tests using the same collection name will see each other's data even with separate fixtures. Use unique collection names per test or test class when isolation matters.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 134,
+    "text": "`type: ignore[arg-type]` needed on `messages` param to `chat.completions.create` because openai SDK types are stricter than `list[dict[str, str]]`.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 170,
+    "text": "When testing orchestrator methods that use both Claude and inference, provide separate `claude_responses` and `inference_responses` lists. The test fixture wires them to different mocks cleanly.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 183,
+    "text": "ChromaDB metadata values come back as union types (str | int | float | ...). To extract an int from metadata, use `int(str(meta.get(\"key\", default)))` for mypy --strict compatibility.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 184,
+    "text": "ChromaDB's built-in embedding function (all-MiniLM-L6-v2 via ONNX) works without sentence-transformers. First run downloads the model to `~/.cache/chroma/onnx_models/`. No GPU needed.",
+    "category": "performance",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 185,
+    "text": "Pluggable score_fn pattern (Callable(system_prompt, gate_prompt) -> float) cleanly decouples optimizer/comparator from judge implementation. Any scoring function works -- mock in tests, real judge in production.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 186,
+    "text": "When adding an optional dependency to a constructor (like QuoteRetriever on PromptBuilder), type it as Optional and gate usage on None checks. Existing callers are unaffected.",
+    "category": "gate",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 187,
+    "text": "Terrarium year-to-corpus-year mapping (Y0->2025, Y1/3/5/10->2026) should be a simple dict, not computed. The corpus has fixed years; the mapping is a fact table.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 188,
+    "text": "Evaluation model has `reasoning: dict[str, object]`, NOT `metadata`. The `metadata` field exists on Message, not Evaluation. Store response text in `reasoning[\"response\"]` for curation pipeline to extract.",
+    "category": "tooling",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 189,
+    "text": "For infrastructure code that runs on remote GPUs (LoRA training), generate the script as a string template rather than importing it. The training script is self-contained and ships to vast.ai separately.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 190,
+    "text": "peft, accelerate, datasets are optional deps -- guard imports behind try/except in the training script. The local codebase never imports them; only the generated script does.",
+    "category": "convention",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 191,
+    "text": "Combining tightly coupled sprints (17-19: training data + training + serving) into one sprint ensures interface consistency and avoids the overhead of three separate commit/test/retro cycles for what is really one feature.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  },
+  {
+    "id": 192,
+    "text": "For autoresearch runner tests, always import `subprocess` in the test file when using `subprocess.CalledProcessError` or `subprocess.TimeoutExpired` in side_effect lists. The mock patches the module reference, but the exception classes must come from the real module.",
+    "category": "testing",
+    "confidence": 0.5,
+    "source_project": "terrarium-engine",
+    "source_sprint": 0,
+    "times_applied": 0
+  }
+]
