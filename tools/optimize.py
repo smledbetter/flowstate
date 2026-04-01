@@ -239,11 +239,9 @@ MUTATIONS = [
         "hypothesis": "Raising light mode threshold from 5 to 8 files reduces planning overhead for medium sprints without losing quality",
         "mutation_type": "process",
     },
-    {
-        "fn": mutate_retro_maturity,
-        "hypothesis": "Projects stabilize by sprint 5 (not 8) — switching to slim retros earlier saves time without missing issues",
-        "mutation_type": "process",
-    },
+    # retro maturity mutation REMOVED — backtest Study 1 showed sprints after
+    # full retros (6-8) score LOWER than after slim retros (9+), p=0.078.
+    # The data does not support earlier cutover.
     {
         "fn": mutate_gate_max_cycles,
         "hypothesis": "Limiting gate fix cycles to 2 (from 3) forces cleaner first passes and surfaces chronic gate issues faster",
