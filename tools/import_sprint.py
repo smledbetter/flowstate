@@ -414,7 +414,8 @@ def archive_import_json(source_path, entry):
     os.makedirs(archive_dir, exist_ok=True)
     archive_name = f"{entry['project']}-sprint-{entry['sprint']}-import.json"
     archive_path = os.path.join(archive_dir, archive_name)
-    shutil.copy2(source_path, archive_path)
+    if os.path.abspath(source_path) != os.path.abspath(archive_path):
+        shutil.copy2(source_path, archive_path)
     return archive_name
 
 
