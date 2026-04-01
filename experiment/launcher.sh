@@ -154,9 +154,10 @@ if tmux has-session -t "$TMUX_SESSION" 2>/dev/null; then
     tmux attach -t "$TMUX_SESSION"
 else
     echo "Launching claude in tmux session: $TMUX_SESSION"
-    PROMPT="Read .claude/skills/flowstate/SKILL.md. This is a Flowstate project. Sprint 0 is already complete — the roadmap at docs/ROADMAP.md is approved. Run all remaining sprints following the Flowstate workflow exactly: Phase 1+2 (THINK/EXECUTE) then Phase 3 (SHIP) for each sprint. Use Auto-Continue to chain sprints. Do not skip Phase 3 metric collection. Do not stop until the roadmap is complete."
+    # Two-phase launch: Sprint 0 creates the roadmap, then continue prompt runs all remaining sprints
+    SPRINT0_PROMPT="Read .claude/skills/flowstate/SKILL.md and PRD.md. This is a Flowstate project. Run Sprint 0 (project setup). When Sprint 0 is complete and you have written the roadmap, DO NOT pause for human review — the roadmap is pre-approved. Immediately proceed to Sprint 1 using Auto-Continue. Follow the Flowstate workflow exactly: Phase 1+2 (THINK/EXECUTE) then Phase 3 (SHIP) for every sprint. Use Auto-Continue to chain all sprints. Do not skip Phase 3 metric collection, retrospectives, or baselines. Do not stop until every phase in the roadmap is marked done."
     tmux new-session -d -s "$TMUX_SESSION" \
-        "cd $BUILD_DIR && claude -p --dangerously-skip-permissions '$PROMPT'"
+        "cd $BUILD_DIR && claude -p --dangerously-skip-permissions '$SPRINT0_PROMPT'"
     echo "Started. Monitor with: tmux attach -t $TMUX_SESSION"
 fi
 
