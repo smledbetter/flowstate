@@ -2,16 +2,16 @@
 """Flowstate Metrics MCP Server.
 
 A Model Context Protocol server that provides sprint metrics collection,
-session log parsing, sprint data import, and v1.2 analytics/learning tools.
+session log parsing, and proxied access to the centralized Flowstate API.
 
-Runs over stdio (JSON-RPC 2.0). DuckDB required for v1.2 tools.
-
-Tools:
+Local tools (stdio, need filesystem access):
   - list_sessions: List available Claude Code session logs for a project
   - collect_metrics: Parse JSONL session logs and return structured metrics
   - sprint_boundary: Find the commit timestamp boundary for --after filtering
-  - import_sprint: Validate and import sprint JSON into sprints.json + DuckDB
-  - query_metrics: Run read-only SQL against the Flowstate DuckDB database
+
+Centralized tools (proxied to VPS HTTP API, fallback to local DuckDB):
+  - import_sprint: Validate and import sprint JSON
+  - query_metrics: Run read-only SQL against DuckDB
   - get_composite_score: Get composite score trend for a project
   - record_lesson: Record a cross-project learning
   - get_lessons: Retrieve cross-project lessons for a sprint
@@ -19,16 +19,60 @@ Tools:
   - get_gate_failures: Retrieve recent gate failures for a project
 """
 
+import hashlib
 import json
 import os
 import re
 import subprocess
 import sys
+import urllib.request
+import urllib.error
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
-# DuckDB is optional — v1.2 tools require it, legacy tools work without it
+# --- Centralized API proxy ---
+
+FLOWSTATE_API = os.environ.get("FLOWSTATE_API", "http://100.87.64.104:8071/api/flowstate")
+FLOWSTATE_PIN = os.environ.get("FLOWSTATE_PIN", "1701")
+
+_pin_hash = hashlib.sha256(FLOWSTATE_PIN.encode()).hexdigest() if FLOWSTATE_PIN else ""
+
+
+def api_call(path, method="GET", data=None, params=None):
+    """Call the centralized Flowstate API on VPS. Returns parsed JSON or raises."""
+    url = f"{FLOWSTATE_API}{path}"
+    if params:
+        qs = "&".join(f"{k}={urllib.request.quote(str(v))}" for k, v in params.items() if v is not None)
+        if qs:
+            url = f"{url}?{qs}"
+    headers = {"Content-Type": "application/json"}
+    if _pin_hash:
+        headers["Cookie"] = f"mc_auth={_pin_hash}"
+    body = json.dumps(data).encode() if data else None
+    req = urllib.request.Request(url, data=body, headers=headers, method=method)
+    try:
+        resp = urllib.request.urlopen(req, timeout=30)
+        return json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode() if e.fp else str(e)
+        try:
+            return json.loads(error_body)
+        except (json.JSONDecodeError, ValueError):
+            raise RuntimeError(f"API error {e.code}: {error_body[:200]}")
+
+
+def api_available():
+    """Check if the centralized API is reachable."""
+    try:
+        api_call("/score", params={"last_n": "1"})
+        return True
+    except Exception:
+        return False
+
+
+# --- Local DuckDB fallback ---
+
 try:
     import duckdb
     HAS_DUCKDB = True
@@ -39,7 +83,7 @@ DB_PATH = os.path.expanduser("~/.flowstate/flowstate.duckdb")
 
 
 def get_db(read_only=False):
-    """Get a DuckDB connection. Raises if DuckDB not available."""
+    """Get a local DuckDB connection. Raises if not available."""
     if not HAS_DUCKDB:
         raise RuntimeError("DuckDB not installed. Run: pip install duckdb")
     if not os.path.exists(DB_PATH):
@@ -789,22 +833,26 @@ def tool_import_sprint(params):
     result["sprint_count_after"] = len(data["sprints"])
     result["archived_to"] = str(archive_path)
 
-    # Write to DuckDB (best-effort — don't fail the import if DuckDB is unavailable)
+    # Write to centralized API (best-effort, fallback to local DuckDB)
     score = _composite_score(m)
     result["composite_score"] = score
-    if HAS_DUCKDB and os.path.exists(DB_PATH):
-        try:
-            # Import the insert function from migrate script
-            sys.path.insert(0, str(REPO_ROOT / "tools"))
-            from migrate_to_duckdb import insert_sprint as db_insert
-            con = duckdb.connect(DB_PATH)
-            db_insert(con, entry)
-            con.close()
-            result["duckdb"] = "written"
-        except Exception as e:
-            result["duckdb"] = f"warning: {e}"
-    else:
-        result["duckdb"] = "skipped (not available)"
+    try:
+        api_result = api_call("/import", "POST", {"entry": entry, "dry_run": False})
+        result["api"] = "written"
+        result["api_score"] = api_result.get("composite_score")
+    except Exception as e:
+        result["api"] = f"unavailable: {e}"
+        # Fallback to local DuckDB
+        if HAS_DUCKDB and os.path.exists(DB_PATH):
+            try:
+                sys.path.insert(0, str(REPO_ROOT / "tools"))
+                from migrate_to_duckdb import insert_sprint as db_insert
+                con = duckdb.connect(DB_PATH)
+                db_insert(con, entry)
+                con.close()
+                result["local_duckdb"] = "written (fallback)"
+            except Exception as e2:
+                result["local_duckdb"] = f"warning: {e2}"
 
     return result
 
@@ -836,199 +884,141 @@ def _composite_score(m):
 
 
 def tool_query_metrics(params):
-    sql = params["sql"].strip()
-    # Validate read-only
-    first_word = re.split(r'\s+', sql.lstrip('( '))[0].upper()
-    if first_word not in ("SELECT", "WITH", "EXPLAIN", "DESCRIBE", "SHOW"):
-        return {"error": f"Only read-only queries allowed. Got: {first_word}"}
-
-    con = get_db(read_only=True)
     try:
-        result = con.execute(sql).fetchdf()
-        # Convert to list of dicts
-        records = result.to_dict(orient="records")
-        return {"rows": records, "count": len(records)}
-    finally:
-        con.close()
+        return api_call("/query", "POST", {"sql": params["sql"]})
+    except Exception as e:
+        log(f"API unavailable for query_metrics, falling back to local: {e}")
+        sql = params["sql"].strip()
+        first_word = re.split(r'\s+', sql.lstrip('( '))[0].upper()
+        if first_word not in ("SELECT", "WITH", "EXPLAIN", "DESCRIBE", "SHOW"):
+            return {"error": f"Only read-only queries allowed. Got: {first_word}"}
+        con = get_db(read_only=True)
+        try:
+            result = con.execute(sql)
+            cols = [d[0] for d in result.description]
+            rows = result.fetchall()
+            records = [dict(zip(cols, row)) for row in rows]
+            return {"rows": records, "count": len(records), "_source": "local"}
+        finally:
+            con.close()
 
 
 def tool_get_composite_score(params):
-    project = params.get("project")
-    last_n = params.get("last_n", 10)
-
-    con = get_db(read_only=True)
     try:
-        if project:
-            rows = con.execute(
-                """SELECT project, sprint, composite_score, rolling_score_5,
-                          gates_first_pass, tokens_per_loc, active_minutes
-                   FROM sprint_analytics
-                   WHERE project = ?
-                   ORDER BY sprint DESC LIMIT ?""",
-                [project, last_n],
-            ).fetchall()
-        else:
-            rows = con.execute(
-                """SELECT project, sprint, composite_score, rolling_score_5,
-                          gates_first_pass, tokens_per_loc, active_minutes
-                   FROM sprint_analytics
-                   ORDER BY imported_at DESC LIMIT ?""",
-                [last_n],
-            ).fetchall()
-
-        cols = ["project", "sprint", "composite_score", "rolling_score_5",
-                "gates_first_pass", "tokens_per_loc", "active_minutes"]
-        records = [dict(zip(cols, row)) for row in rows]
-
-        # Add summary
-        if records:
+        p = {"last_n": str(params.get("last_n", 10))}
+        if params.get("project"):
+            p["project"] = params["project"]
+        return api_call("/score", params=p)
+    except Exception as e:
+        log(f"API unavailable for get_composite_score, falling back to local: {e}")
+        con = get_db(read_only=True)
+        try:
+            project = params.get("project")
+            last_n = params.get("last_n", 10)
+            if project:
+                rows = con.execute(
+                    "SELECT project, sprint, composite_score, gates_first_pass FROM sprints WHERE project = ? ORDER BY sprint DESC LIMIT ?",
+                    [project, last_n],
+                ).fetchall()
+            else:
+                rows = con.execute(
+                    "SELECT project, sprint, composite_score, gates_first_pass FROM sprints ORDER BY imported_at DESC LIMIT ?",
+                    [last_n],
+                ).fetchall()
+            cols = ["project", "sprint", "composite_score", "gates_first_pass"]
+            records = [dict(zip(cols, row)) for row in rows]
             scores = [r["composite_score"] for r in records if r["composite_score"] is not None]
-            summary = {
-                "avg_score": round(sum(scores) / len(scores), 4) if scores else None,
-                "min_score": round(min(scores), 4) if scores else None,
-                "max_score": round(max(scores), 4) if scores else None,
-                "count": len(records),
-            }
-        else:
-            summary = {"count": 0}
-
-        return {"sprints": records, "summary": summary}
-    finally:
-        con.close()
-
-
-def _jaccard(a, b):
-    """Word-level Jaccard similarity between two strings."""
-    words_a = set(a.lower().split())
-    words_b = set(b.lower().split())
-    if not words_a or not words_b:
-        return 0.0
-    return len(words_a & words_b) / len(words_a | words_b)
+            return {"sprints": records, "summary": {"avg_score": round(sum(scores)/len(scores), 4) if scores else None, "count": len(records)}, "_source": "local"}
+        finally:
+            con.close()
 
 
 def tool_record_lesson(params):
-    text = params["text"].strip()
-    category = params["category"]
-    source_project = params["source_project"]
-    source_sprint = params["source_sprint"]
-
-    con = get_db()
     try:
-        # Deduplication: check for similar existing lessons
-        existing = con.execute(
-            "SELECT id, text, times_applied FROM lessons WHERE status = 'active'"
-        ).fetchall()
-        for eid, etext, times_applied in existing:
-            if _jaccard(text, etext) > 0.7:
-                con.execute(
-                    "UPDATE lessons SET times_applied = times_applied + 1, last_applied_at = current_timestamp WHERE id = ?",
-                    [eid],
-                )
-                return {
-                    "deduplicated": True,
-                    "existing_id": eid,
-                    "existing_text": etext,
-                    "times_applied": times_applied + 1,
-                }
-
-        con.execute(
-            """INSERT INTO lessons (text, category, source_project, source_sprint)
-               VALUES (?, ?, ?, ?)""",
-            [text, category, source_project, source_sprint],
-        )
-        lid = con.execute("SELECT MAX(id) FROM lessons").fetchone()[0]
-        return {"recorded": True, "lesson_id": lid, "text": text, "category": category}
-    finally:
-        con.close()
+        return api_call("/lessons", "POST", {
+            "text": params["text"],
+            "category": params["category"],
+            "source_project": params["source_project"],
+            "source_sprint": params["source_sprint"],
+        })
+    except Exception as e:
+        log(f"API unavailable for record_lesson, falling back to local: {e}")
+        con = get_db()
+        try:
+            con.execute(
+                "INSERT INTO lessons (text, category, source_project, source_sprint) VALUES (?, ?, ?, ?)",
+                [params["text"], params["category"], params["source_project"], params["source_sprint"]],
+            )
+            lid = con.execute("SELECT MAX(id) FROM lessons").fetchone()[0]
+            return {"recorded": True, "lesson_id": lid, "_source": "local"}
+        finally:
+            con.close()
 
 
 def tool_get_lessons(params):
-    project = params["project"]
-    limit = params.get("limit", 15)
-    category = params.get("category")
-
-    con = get_db(read_only=True)
     try:
-        if category:
+        p = {"project": params["project"], "limit": str(params.get("limit", 15))}
+        if params.get("category"):
+            p["category"] = params["category"]
+        return api_call("/lessons", params=p)
+    except Exception as e:
+        log(f"API unavailable for get_lessons, falling back to local: {e}")
+        con = get_db(read_only=True)
+        try:
             rows = con.execute(
-                """SELECT id, text, category, confidence, source_project, source_sprint, times_applied
-                   FROM lessons
-                   WHERE status = 'active' AND source_project != ? AND category = ?
-                   ORDER BY confidence DESC, times_applied DESC
-                   LIMIT ?""",
-                [project, category, limit],
+                "SELECT id, text, category, confidence, source_project, source_sprint, times_applied FROM lessons WHERE status = 'active' AND source_project != ? ORDER BY confidence DESC LIMIT ?",
+                [params["project"], params.get("limit", 15)],
             ).fetchall()
-        else:
-            rows = con.execute(
-                """SELECT id, text, category, confidence, source_project, source_sprint, times_applied
-                   FROM lessons
-                   WHERE status = 'active' AND source_project != ?
-                   ORDER BY confidence DESC, times_applied DESC
-                   LIMIT ?""",
-                [project, limit],
-            ).fetchall()
-
-        cols = ["id", "text", "category", "confidence", "source_project", "source_sprint", "times_applied"]
-        return {"lessons": [dict(zip(cols, row)) for row in rows], "count": len(rows)}
-    finally:
-        con.close()
+            cols = ["id", "text", "category", "confidence", "source_project", "source_sprint", "times_applied"]
+            return {"lessons": [dict(zip(cols, row)) for row in rows], "count": len(rows), "_source": "local"}
+        finally:
+            con.close()
 
 
 def tool_record_gate_failure(params):
-    project = params["project"]
-    sprint = params["sprint"]
-    gate_type = params["gate_type"]
-    error_summary = params["error_summary"]
-    error_detail = params.get("error_detail", "")[:2000]
-    fix_applied = params.get("fix_applied")
-
-    con = get_db()
     try:
-        con.execute(
-            """INSERT INTO gate_failures (project, sprint, gate_type, error_summary, error_detail, fix_applied)
-               VALUES (?, ?, ?, ?, ?, ?)""",
-            [project, sprint, gate_type, error_summary, error_detail, fix_applied],
-        )
-        gid = con.execute("SELECT MAX(id) FROM gate_failures").fetchone()[0]
-        return {"recorded": True, "id": gid}
-    finally:
-        con.close()
+        return api_call("/gate-failures", "POST", {
+            "project": params["project"],
+            "sprint": params["sprint"],
+            "gate_type": params["gate_type"],
+            "error_summary": params["error_summary"],
+            "error_detail": params.get("error_detail"),
+            "fix_applied": params.get("fix_applied"),
+        })
+    except Exception as e:
+        log(f"API unavailable for record_gate_failure, falling back to local: {e}")
+        con = get_db()
+        try:
+            con.execute(
+                "INSERT INTO gate_failures (project, sprint, gate_type, error_summary, error_detail, fix_applied) VALUES (?, ?, ?, ?, ?, ?)",
+                [params["project"], params["sprint"], params["gate_type"], params["error_summary"],
+                 (params.get("error_detail") or "")[:2000], params.get("fix_applied")],
+            )
+            gid = con.execute("SELECT MAX(id) FROM gate_failures").fetchone()[0]
+            return {"recorded": True, "id": gid, "_source": "local"}
+        finally:
+            con.close()
 
 
 def tool_get_gate_failures(params):
-    project = params["project"]
-    limit = params.get("limit", 10)
-
-    con = get_db(read_only=True)
     try:
-        rows = con.execute(
-            """SELECT id, sprint, gate_type, error_summary, fix_applied, created_at
-               FROM gate_failures
-               WHERE project = ?
-               ORDER BY created_at DESC
-               LIMIT ?""",
-            [project, limit],
-        ).fetchall()
-        cols = ["id", "sprint", "gate_type", "error_summary", "fix_applied", "created_at"]
-        records = [dict(zip(cols, row)) for row in rows]
-        # Stringify timestamps
-        for r in records:
-            if r.get("created_at"):
-                r["created_at"] = str(r["created_at"])
-
-        # Add frequency analysis
-        freq = con.execute(
-            """SELECT gate_type, error_summary, COUNT(*) as freq
-               FROM gate_failures WHERE project = ?
-               GROUP BY gate_type, error_summary
-               ORDER BY freq DESC LIMIT 5""",
-            [project],
-        ).fetchall()
-        patterns = [{"gate_type": r[0], "error_summary": r[1], "frequency": r[2]} for r in freq]
-
-        return {"failures": records, "recurring_patterns": patterns}
-    finally:
-        con.close()
+        return api_call("/gate-failures", params={"project": params["project"], "limit": str(params.get("limit", 10))})
+    except Exception as e:
+        log(f"API unavailable for get_gate_failures, falling back to local: {e}")
+        con = get_db(read_only=True)
+        try:
+            rows = con.execute(
+                "SELECT id, sprint, gate_type, error_summary, fix_applied, created_at FROM gate_failures WHERE project = ? ORDER BY created_at DESC LIMIT ?",
+                [params["project"], params.get("limit", 10)],
+            ).fetchall()
+            cols = ["id", "sprint", "gate_type", "error_summary", "fix_applied", "created_at"]
+            records = [dict(zip(cols, row)) for row in rows]
+            for r in records:
+                if r.get("created_at"):
+                    r["created_at"] = str(r["created_at"])
+            return {"failures": records, "_source": "local"}
+        finally:
+            con.close()
 
 
 # ---------------------------------------------------------------------------
