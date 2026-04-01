@@ -529,6 +529,25 @@ def import_from_file(path, dry_run=False):
     print(f"  Archived: imports/{archive_name}")
     if warnings:
         print(f"  Auto-corrections applied: {len(warnings)}")
+
+    # Write to DuckDB (best-effort)
+    db_path = os.path.expanduser("~/.flowstate/flowstate.duckdb")
+    try:
+        import duckdb
+        if os.path.exists(db_path):
+            from migrate_to_duckdb import insert_sprint as db_insert, composite_score
+            con = duckdb.connect(db_path)
+            db_insert(con, entry)
+            con.close()
+            score = composite_score(entry.get("metrics", {}))
+            print(f"  DuckDB: written (composite score: {score:.3f})")
+        else:
+            print(f"  DuckDB: skipped (not found at {db_path})")
+    except ImportError:
+        print(f"  DuckDB: skipped (duckdb not installed)")
+    except Exception as e:
+        print(f"  DuckDB: warning — {e}")
+
     print(f"\n  Next steps:")
     print(f"    1. Review: cat sprints.json | python3 -m json.tool | tail -50")
     print(f"    2. Update RESULTS.md with sprint notes")

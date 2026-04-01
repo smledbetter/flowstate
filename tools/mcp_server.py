@@ -2,24 +2,49 @@
 """Flowstate Metrics MCP Server.
 
 A Model Context Protocol server that provides sprint metrics collection,
-session log parsing, and sprint data import for Flowstate projects.
+session log parsing, sprint data import, and v1.2 analytics/learning tools.
 
-Runs over stdio (JSON-RPC 2.0). Zero external dependencies — stdlib only.
+Runs over stdio (JSON-RPC 2.0). DuckDB required for v1.2 tools.
 
 Tools:
   - list_sessions: List available Claude Code session logs for a project
   - collect_metrics: Parse JSONL session logs and return structured metrics
   - sprint_boundary: Find the commit timestamp boundary for --after filtering
-  - import_sprint: Validate and import sprint JSON into sprints.json
+  - import_sprint: Validate and import sprint JSON into sprints.json + DuckDB
+  - query_metrics: Run read-only SQL against the Flowstate DuckDB database
+  - get_composite_score: Get composite score trend for a project
+  - record_lesson: Record a cross-project learning
+  - get_lessons: Retrieve cross-project lessons for a sprint
+  - record_gate_failure: Log a gate failure with error details and fix
+  - get_gate_failures: Retrieve recent gate failures for a project
 """
 
 import json
 import os
+import re
 import subprocess
 import sys
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
+
+# DuckDB is optional — v1.2 tools require it, legacy tools work without it
+try:
+    import duckdb
+    HAS_DUCKDB = True
+except ImportError:
+    HAS_DUCKDB = False
+
+DB_PATH = os.path.expanduser("~/.flowstate/flowstate.duckdb")
+
+
+def get_db(read_only=False):
+    """Get a DuckDB connection. Raises if DuckDB not available."""
+    if not HAS_DUCKDB:
+        raise RuntimeError("DuckDB not installed. Run: pip install duckdb")
+    if not os.path.exists(DB_PATH):
+        raise RuntimeError(f"DuckDB not found at {DB_PATH}. Run: python3 tools/migrate_to_duckdb.py")
+    return duckdb.connect(DB_PATH, read_only=read_only)
 
 # All logging goes to stderr (stdout is the JSON-RPC transport)
 def log(msg):
@@ -32,7 +57,7 @@ def log(msg):
 
 SERVER_INFO = {
     "name": "flowstate",
-    "version": "1.0.0",
+    "version": "1.2.0",
 }
 
 TOOLS = [
@@ -93,7 +118,7 @@ TOOLS = [
     },
     {
         "name": "import_sprint",
-        "description": "Validate and optionally import a sprint JSON file into sprints.json. Use dry_run=true to validate without writing.",
+        "description": "Validate and optionally import a sprint JSON file into sprints.json and DuckDB. Use dry_run=true to validate without writing.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -108,6 +133,133 @@ TOOLS = [
                 },
             },
             "required": ["import_json_path"],
+        },
+    },
+    {
+        "name": "query_metrics",
+        "description": "Run a read-only SQL query against the Flowstate DuckDB database. Returns results as JSON. Use sprint_analytics view for derived metrics.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "sql": {
+                    "type": "string",
+                    "description": "SQL query (SELECT only, no mutations)",
+                },
+            },
+            "required": ["sql"],
+        },
+    },
+    {
+        "name": "get_composite_score",
+        "description": "Get the composite score trend for a project (or all projects). Score is 0-1, higher is better, weighted: quality 40%, token efficiency 30%, time 15%, autonomy 15%.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "project": {
+                    "type": "string",
+                    "description": "Project slug (optional, all projects if omitted)",
+                },
+                "last_n": {
+                    "type": "integer",
+                    "description": "Number of recent sprints to return (default 10)",
+                    "default": 10,
+                },
+            },
+        },
+    },
+    {
+        "name": "record_lesson",
+        "description": "Record a cross-project learning in DuckDB. Deduplicates by word overlap.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "text": {
+                    "type": "string",
+                    "description": "The lesson text (one clear, actionable sentence)",
+                },
+                "category": {
+                    "type": "string",
+                    "enum": ["gate", "framework", "testing", "performance", "convention", "tooling"],
+                    "description": "Lesson category",
+                },
+                "source_project": {
+                    "type": "string",
+                    "description": "Project slug where this was learned",
+                },
+                "source_sprint": {
+                    "type": "integer",
+                    "description": "Sprint number where this was learned",
+                },
+            },
+            "required": ["text", "category", "source_project", "source_sprint"],
+        },
+    },
+    {
+        "name": "get_lessons",
+        "description": "Retrieve cross-project lessons ranked by confidence. Excludes lessons from the specified project (those are already in progress.md).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "project": {
+                    "type": "string",
+                    "description": "Current project slug (to exclude same-project lessons)",
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Max lessons to return (default 15)",
+                    "default": 15,
+                },
+                "category": {
+                    "type": "string",
+                    "description": "Optional category filter",
+                },
+            },
+            "required": ["project"],
+        },
+    },
+    {
+        "name": "record_gate_failure",
+        "description": "Log a gate failure with error details and the fix applied.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "project": {"type": "string", "description": "Project slug"},
+                "sprint": {"type": "integer", "description": "Sprint number"},
+                "gate_type": {
+                    "type": "string",
+                    "enum": ["build", "lint", "test", "coverage"],
+                    "description": "Type of gate that failed",
+                },
+                "error_summary": {
+                    "type": "string",
+                    "description": "One-line classification of the error",
+                },
+                "error_detail": {
+                    "type": "string",
+                    "description": "Full error text (optional, truncated to 2000 chars)",
+                },
+                "fix_applied": {
+                    "type": "string",
+                    "description": "What fixed the issue",
+                },
+            },
+            "required": ["project", "sprint", "gate_type", "error_summary"],
+        },
+    },
+    {
+        "name": "get_gate_failures",
+        "description": "Retrieve recent gate failures for a project, ordered by most recent first.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "project": {"type": "string", "description": "Project slug"},
+                "limit": {
+                    "type": "integer",
+                    "description": "Max failures to return (default 10)",
+                    "default": 10,
+                },
+            },
+            "required": ["project"],
         },
     },
 ]
@@ -630,12 +782,253 @@ def tool_import_sprint(params):
     archive_name = f"{entry['project']}-sprint-{entry['sprint']}-import.json"
     archive_path = imports_dir / archive_name
     import shutil
-    shutil.copy2(import_path, archive_path)
+    if os.path.abspath(import_path) != os.path.abspath(str(archive_path)):
+        shutil.copy2(import_path, archive_path)
 
     result["imported"] = True
     result["sprint_count_after"] = len(data["sprints"])
     result["archived_to"] = str(archive_path)
+
+    # Write to DuckDB (best-effort — don't fail the import if DuckDB is unavailable)
+    score = _composite_score(m)
+    result["composite_score"] = score
+    if HAS_DUCKDB and os.path.exists(DB_PATH):
+        try:
+            # Import the insert function from migrate script
+            sys.path.insert(0, str(REPO_ROOT / "tools"))
+            from migrate_to_duckdb import insert_sprint as db_insert
+            con = duckdb.connect(DB_PATH)
+            db_insert(con, entry)
+            con.close()
+            result["duckdb"] = "written"
+        except Exception as e:
+            result["duckdb"] = f"warning: {e}"
+    else:
+        result["duckdb"] = "skipped (not available)"
+
     return result
+
+
+# ---------------------------------------------------------------------------
+# v1.2 Tools: DuckDB analytics, lessons, gate failures
+# ---------------------------------------------------------------------------
+
+
+def _composite_score(m):
+    """Compute composite score from sprint metrics dict. Returns 0-1."""
+    gates = m.get("gates_first_pass")
+    quality = 1.0 if gates is True else (0.0 if gates is False else 0.5)
+
+    nw = m.get("new_work_tokens")
+    loc = m.get("loc_added") or 0
+    if nw and loc > 0:
+        token_score = max(0.0, 1.0 - ((nw / loc) / 1000))
+    else:
+        token_score = 0.5
+
+    time_s = m.get("active_session_time_s")
+    time_score = max(0.0, 1.0 - (time_s / 3600)) if time_s is not None else 0.5
+
+    compressions = m.get("context_compressions") or 0
+    autonomy = max(0.0, 1.0 - (compressions / 5))
+
+    return round(0.40 * quality + 0.30 * token_score + 0.15 * time_score + 0.15 * autonomy, 4)
+
+
+def tool_query_metrics(params):
+    sql = params["sql"].strip()
+    # Validate read-only
+    first_word = re.split(r'\s+', sql.lstrip('( '))[0].upper()
+    if first_word not in ("SELECT", "WITH", "EXPLAIN", "DESCRIBE", "SHOW"):
+        return {"error": f"Only read-only queries allowed. Got: {first_word}"}
+
+    con = get_db(read_only=True)
+    try:
+        result = con.execute(sql).fetchdf()
+        # Convert to list of dicts
+        records = result.to_dict(orient="records")
+        return {"rows": records, "count": len(records)}
+    finally:
+        con.close()
+
+
+def tool_get_composite_score(params):
+    project = params.get("project")
+    last_n = params.get("last_n", 10)
+
+    con = get_db(read_only=True)
+    try:
+        if project:
+            rows = con.execute(
+                """SELECT project, sprint, composite_score, rolling_score_5,
+                          gates_first_pass, tokens_per_loc, active_minutes
+                   FROM sprint_analytics
+                   WHERE project = ?
+                   ORDER BY sprint DESC LIMIT ?""",
+                [project, last_n],
+            ).fetchall()
+        else:
+            rows = con.execute(
+                """SELECT project, sprint, composite_score, rolling_score_5,
+                          gates_first_pass, tokens_per_loc, active_minutes
+                   FROM sprint_analytics
+                   ORDER BY imported_at DESC LIMIT ?""",
+                [last_n],
+            ).fetchall()
+
+        cols = ["project", "sprint", "composite_score", "rolling_score_5",
+                "gates_first_pass", "tokens_per_loc", "active_minutes"]
+        records = [dict(zip(cols, row)) for row in rows]
+
+        # Add summary
+        if records:
+            scores = [r["composite_score"] for r in records if r["composite_score"] is not None]
+            summary = {
+                "avg_score": round(sum(scores) / len(scores), 4) if scores else None,
+                "min_score": round(min(scores), 4) if scores else None,
+                "max_score": round(max(scores), 4) if scores else None,
+                "count": len(records),
+            }
+        else:
+            summary = {"count": 0}
+
+        return {"sprints": records, "summary": summary}
+    finally:
+        con.close()
+
+
+def _jaccard(a, b):
+    """Word-level Jaccard similarity between two strings."""
+    words_a = set(a.lower().split())
+    words_b = set(b.lower().split())
+    if not words_a or not words_b:
+        return 0.0
+    return len(words_a & words_b) / len(words_a | words_b)
+
+
+def tool_record_lesson(params):
+    text = params["text"].strip()
+    category = params["category"]
+    source_project = params["source_project"]
+    source_sprint = params["source_sprint"]
+
+    con = get_db()
+    try:
+        # Deduplication: check for similar existing lessons
+        existing = con.execute(
+            "SELECT id, text, times_applied FROM lessons WHERE status = 'active'"
+        ).fetchall()
+        for eid, etext, times_applied in existing:
+            if _jaccard(text, etext) > 0.7:
+                con.execute(
+                    "UPDATE lessons SET times_applied = times_applied + 1, last_applied_at = current_timestamp WHERE id = ?",
+                    [eid],
+                )
+                return {
+                    "deduplicated": True,
+                    "existing_id": eid,
+                    "existing_text": etext,
+                    "times_applied": times_applied + 1,
+                }
+
+        con.execute(
+            """INSERT INTO lessons (text, category, source_project, source_sprint)
+               VALUES (?, ?, ?, ?)""",
+            [text, category, source_project, source_sprint],
+        )
+        lid = con.execute("SELECT MAX(id) FROM lessons").fetchone()[0]
+        return {"recorded": True, "lesson_id": lid, "text": text, "category": category}
+    finally:
+        con.close()
+
+
+def tool_get_lessons(params):
+    project = params["project"]
+    limit = params.get("limit", 15)
+    category = params.get("category")
+
+    con = get_db(read_only=True)
+    try:
+        if category:
+            rows = con.execute(
+                """SELECT id, text, category, confidence, source_project, source_sprint, times_applied
+                   FROM lessons
+                   WHERE status = 'active' AND source_project != ? AND category = ?
+                   ORDER BY confidence DESC, times_applied DESC
+                   LIMIT ?""",
+                [project, category, limit],
+            ).fetchall()
+        else:
+            rows = con.execute(
+                """SELECT id, text, category, confidence, source_project, source_sprint, times_applied
+                   FROM lessons
+                   WHERE status = 'active' AND source_project != ?
+                   ORDER BY confidence DESC, times_applied DESC
+                   LIMIT ?""",
+                [project, limit],
+            ).fetchall()
+
+        cols = ["id", "text", "category", "confidence", "source_project", "source_sprint", "times_applied"]
+        return {"lessons": [dict(zip(cols, row)) for row in rows], "count": len(rows)}
+    finally:
+        con.close()
+
+
+def tool_record_gate_failure(params):
+    project = params["project"]
+    sprint = params["sprint"]
+    gate_type = params["gate_type"]
+    error_summary = params["error_summary"]
+    error_detail = params.get("error_detail", "")[:2000]
+    fix_applied = params.get("fix_applied")
+
+    con = get_db()
+    try:
+        con.execute(
+            """INSERT INTO gate_failures (project, sprint, gate_type, error_summary, error_detail, fix_applied)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            [project, sprint, gate_type, error_summary, error_detail, fix_applied],
+        )
+        gid = con.execute("SELECT MAX(id) FROM gate_failures").fetchone()[0]
+        return {"recorded": True, "id": gid}
+    finally:
+        con.close()
+
+
+def tool_get_gate_failures(params):
+    project = params["project"]
+    limit = params.get("limit", 10)
+
+    con = get_db(read_only=True)
+    try:
+        rows = con.execute(
+            """SELECT id, sprint, gate_type, error_summary, fix_applied, created_at
+               FROM gate_failures
+               WHERE project = ?
+               ORDER BY created_at DESC
+               LIMIT ?""",
+            [project, limit],
+        ).fetchall()
+        cols = ["id", "sprint", "gate_type", "error_summary", "fix_applied", "created_at"]
+        records = [dict(zip(cols, row)) for row in rows]
+        # Stringify timestamps
+        for r in records:
+            if r.get("created_at"):
+                r["created_at"] = str(r["created_at"])
+
+        # Add frequency analysis
+        freq = con.execute(
+            """SELECT gate_type, error_summary, COUNT(*) as freq
+               FROM gate_failures WHERE project = ?
+               GROUP BY gate_type, error_summary
+               ORDER BY freq DESC LIMIT 5""",
+            [project],
+        ).fetchall()
+        patterns = [{"gate_type": r[0], "error_summary": r[1], "frequency": r[2]} for r in freq]
+
+        return {"failures": records, "recurring_patterns": patterns}
+    finally:
+        con.close()
 
 
 # ---------------------------------------------------------------------------
@@ -647,6 +1040,12 @@ TOOL_HANDLERS = {
     "collect_metrics": tool_collect_metrics,
     "sprint_boundary": tool_sprint_boundary,
     "import_sprint": tool_import_sprint,
+    "query_metrics": tool_query_metrics,
+    "get_composite_score": tool_get_composite_score,
+    "record_lesson": tool_record_lesson,
+    "get_lessons": tool_get_lessons,
+    "record_gate_failure": tool_record_gate_failure,
+    "get_gate_failures": tool_get_gate_failures,
 }
 
 
