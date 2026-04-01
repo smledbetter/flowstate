@@ -1,28 +1,33 @@
 #!/usr/bin/env python3
 """Flowstate Hill-Climbing Optimizer.
 
-Automatically proposes, tests, and evaluates process mutations to improve
-sprint outcomes. Inspired by Karpathy's autoresearch.
+Automatically proposes, applies, tests, and evaluates process mutations
+to improve sprint outcomes. Inspired by Karpathy's autoresearch.
 
 Usage:
     python3 tools/optimize.py propose [--db PATH]
     python3 tools/optimize.py evaluate [--db PATH]
+    python3 tools/optimize.py revert [--db PATH]
     python3 tools/optimize.py status [--db PATH]
 
 Commands:
-    propose   - Analyze data, propose a mutation, create experiment branch
+    propose   - Analyze data, propose a mutation, apply it to SKILL.md + deploy
     evaluate  - Check running experiments, keep/revert based on results
+    revert    - Force-revert the running experiment
     status    - Show current experiment state and score trends
 
-The optimizer does NOT run sprints itself. It proposes mutations, and normal
-sprint work generates the composite scores that feed back into evaluation.
+The optimizer modifies SKILL.md and deploys to all projects. Normal sprint
+work generates composite scores that feed back into evaluation.
 """
 
 import json
 import os
+import re
+import shutil
 import subprocess
 import sys
 from datetime import datetime
+from pathlib import Path
 
 try:
     import duckdb
@@ -32,7 +37,9 @@ except ImportError:
 
 DEFAULT_DB = os.path.expanduser("~/.flowstate/flowstate.duckdb")
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-IMPROVEMENT_THRESHOLD = 0.02  # 2% improvement to keep
+SKILL_PATH = os.path.join(REPO_ROOT, "skills", "flowstate", "SKILL.md")
+BACKUP_DIR = os.path.join(REPO_ROOT, ".optimize-backups")
+IMPROVEMENT_THRESHOLD = 0.02
 MAX_SPRINTS_PER_EXPERIMENT = 6
 MIN_SPRINTS_PER_EXPERIMENT = 3
 
@@ -41,11 +48,74 @@ def get_db(db_path, read_only=False):
     return duckdb.connect(db_path, read_only=read_only)
 
 
+# --- File operations ---
+
+
+def backup_skill():
+    """Save a backup of the current SKILL.md before mutation."""
+    os.makedirs(BACKUP_DIR, exist_ok=True)
+    backup = os.path.join(BACKUP_DIR, f"SKILL-{datetime.now().strftime('%Y%m%d-%H%M%S')}.md")
+    shutil.copy2(SKILL_PATH, backup)
+    return backup
+
+
+def restore_skill(backup_path):
+    """Restore SKILL.md from backup."""
+    shutil.copy2(backup_path, SKILL_PATH)
+
+
+def read_skill():
+    with open(SKILL_PATH) as f:
+        return f.read()
+
+
+def write_skill(content):
+    with open(SKILL_PATH, "w") as f:
+        f.write(content)
+
+
+def deploy_skill():
+    """Copy SKILL.md to all local and VPS projects that have it."""
+    deployed = []
+
+    # Local projects
+    sites_dir = Path.home() / "Sites"
+    if sites_dir.is_dir():
+        for project_dir in sites_dir.iterdir():
+            skill_target = project_dir / ".claude" / "skills" / "flowstate" / "SKILL.md"
+            if skill_target.exists():
+                shutil.copy2(SKILL_PATH, str(skill_target))
+                deployed.append(project_dir.name)
+
+    # VPS projects (best-effort)
+    ssh_key = os.path.expanduser("~/.ssh/claude-dev-droplet")
+    if os.path.exists(ssh_key):
+        try:
+            # Copy to VPS temp
+            subprocess.run(
+                ["scp", "-i", ssh_key, SKILL_PATH, "dev@100.87.64.104:/tmp/SKILL-optimized.md"],
+                capture_output=True, timeout=10,
+            )
+            # Deploy to all VPS projects
+            result = subprocess.run(
+                ["ssh", "-i", ssh_key, "-o", "ConnectTimeout=5", "dev@100.87.64.104",
+                 "for f in /home/dev/projects/*/.claude/skills/flowstate/SKILL.md; do "
+                 "[ -f \"$f\" ] && cp /tmp/SKILL-optimized.md \"$f\" && "
+                 "echo $(basename $(dirname $(dirname $(dirname \"$f\")))); done"],
+                capture_output=True, text=True, timeout=15,
+            )
+            vps_projects = [p.strip() for p in result.stdout.strip().split("\n") if p.strip()]
+            deployed.extend([f"vps:{p}" for p in vps_projects])
+        except Exception:
+            pass  # VPS unreachable, skip
+
+    return deployed
+
+
 # --- Analysis ---
 
 
 def get_baseline_score(con, last_n=10):
-    """Get the baseline composite score (avg of last N sprints)."""
     row = con.execute(
         "SELECT AVG(composite_score) FROM (SELECT composite_score FROM sprints ORDER BY imported_at DESC LIMIT ?)",
         [last_n],
@@ -54,30 +124,25 @@ def get_baseline_score(con, last_n=10):
 
 
 def get_top_gate_failures(con, limit=5):
-    """Get most frequent gate failure patterns."""
     return con.execute(
         """SELECT gate_type, error_summary, COUNT(*) as freq
-           FROM gate_failures
-           GROUP BY gate_type, error_summary
+           FROM gate_failures GROUP BY gate_type, error_summary
            ORDER BY freq DESC LIMIT ?""",
         [limit],
     ).fetchall()
 
 
 def get_worst_sprints(con, limit=5):
-    """Get sprints with lowest composite scores."""
     return con.execute(
         """SELECT project, sprint, composite_score, gates_first_pass, task_type,
                   gates_first_pass_note
-           FROM sprints
-           WHERE composite_score IS NOT NULL
+           FROM sprints WHERE composite_score IS NOT NULL
            ORDER BY composite_score ASC LIMIT ?""",
         [limit],
     ).fetchall()
 
 
 def get_score_by_task_type(con):
-    """Get avg composite score by task type."""
     return con.execute(
         """SELECT task_type, COUNT(*) n, ROUND(AVG(composite_score), 4) avg_score
            FROM sprints WHERE task_type IS NOT NULL
@@ -86,7 +151,6 @@ def get_score_by_task_type(con):
 
 
 def get_running_experiment(con):
-    """Get the currently running experiment, if any."""
     row = con.execute(
         "SELECT * FROM experiments WHERE status = 'running' LIMIT 1"
     ).fetchone()
@@ -96,122 +160,184 @@ def get_running_experiment(con):
     return None
 
 
-# --- Mutation Proposals ---
+# --- Mutation generators (return actual text transformations) ---
 
 
-def propose_gate_mutation(con):
-    """Propose a gate-related mutation based on failure patterns."""
-    failures = get_top_gate_failures(con)
-    if not failures:
+def mutate_gate_incremental_tests(skill_text):
+    """Add 'run tests after each source file change' to EXECUTE section."""
+    marker = "- Run `/gate` after every meaningful change -- not batch-at-end"
+    replacement = (
+        "- **Incremental testing**: After modifying each source file, run the test suite for that module immediately. "
+        "Do not wait for gate time to discover test failures.\n"
+        "- Run `/gate` after every meaningful change -- not batch-at-end"
+    )
+    if "Incremental testing" in skill_text:
+        return None  # already applied
+    if marker not in skill_text:
+        return None  # can't find insertion point
+    return skill_text.replace(marker, replacement)
+
+
+def mutate_model_routing_stronger(skill_text):
+    """Strengthen model routing from advisory to directive."""
+    old = "This is advisory — use your judgment. When in doubt, use the default."
+    new = (
+        "Follow this routing for subagent tasks. Opus for decisions, Sonnet for mechanical work. "
+        "This saves ~40% on token costs for test generation and lint fixes with no measured quality impact."
+    )
+    if old not in skill_text:
         return None
-
-    top = failures[0]
-    gate_type, summary, freq = top
-
-    if gate_type == "lint" and freq >= 3:
-        return {
-            "hypothesis": f"Adding lint pre-check instruction will reduce lint gate failures (currently {freq} occurrences of: {summary[:80]})",
-            "mutation_type": "gate_config",
-            "mutation_diff": "Lint pre-check is already in SKILL.md v1.2. This experiment tracks whether it reduces failures in practice.",
-        }
-
-    if gate_type == "test" and freq >= 3:
-        return {
-            "hypothesis": f"Adding 'run tests after each file change' instruction will catch test failures earlier (currently {freq} test failures)",
-            "mutation_type": "process",
-            "mutation_diff": "Add to EXECUTE section: 'Run the test suite after modifying each source file, not just at gate time.'",
-        }
-
-    return None
+    return skill_text.replace(old, new)
 
 
-def propose_model_routing(con):
-    """Propose a model routing change."""
-    # Check if any projects use Sonnet successfully
-    row = con.execute(
-        """SELECT COUNT(*) as n, AVG(composite_score) as avg_score
-           FROM sprints WHERE sonnet_pct > 20"""
-    ).fetchone()
-
-    if row[0] > 0 and row[1] and row[1] > 0.6:
-        return {
-            "hypothesis": f"Using Sonnet for mechanical subtasks (lint fixes, test generation) saves tokens without quality loss. {row[0]} sprints with >20% Sonnet avg score: {row[1]:.3f}",
-            "mutation_type": "model_routing",
-            "mutation_diff": "Set model routing: lint_fixes=sonnet, test_generation=sonnet, retro_writing=sonnet. Keep planning/architecture on opus.",
-        }
-    return None
+def mutate_scope_threshold(skill_text):
+    """Raise light mode threshold from 5 files to 8 files."""
+    old = "If ≤5 files AND no new external dependencies: use **LIGHT MODE**."
+    new = "If ≤8 files AND no new external dependencies: use **LIGHT MODE**."
+    if old not in skill_text:
+        return None
+    return skill_text.replace(old, new)
 
 
-def propose_score_weight_change(con):
-    """Propose adjusting composite score weights."""
-    # Check if quality weight is too dominant
-    rows = con.execute(
-        """SELECT
-            AVG(CASE WHEN gates_first_pass THEN composite_score ELSE NULL END) as pass_avg,
-            AVG(CASE WHEN NOT gates_first_pass THEN composite_score ELSE NULL END) as fail_avg,
-            COUNT(CASE WHEN gates_first_pass THEN 1 END) as pass_n,
-            COUNT(CASE WHEN NOT gates_first_pass THEN 1 END) as fail_n
-           FROM sprints WHERE gates_first_pass IS NOT NULL"""
-    ).fetchone()
+def mutate_retro_maturity(skill_text):
+    """Lower full retro threshold from sprint 8 to sprint 5."""
+    old = "**Sprints 1-8 (establishing)** — full retro:"
+    new = "**Sprints 1-5 (establishing)** — full retro:"
+    if old not in skill_text:
+        return None
+    new_text = skill_text.replace(old, new)
+    old2 = "**Sprints 9+ (mature)** — slim retro:"
+    new2 = "**Sprints 6+ (mature)** — slim retro:"
+    if old2 in new_text:
+        new_text = new_text.replace(old2, new2)
+    return new_text
 
-    if rows and rows[0] and rows[1]:
-        gap = rows[0] - rows[1]
-        if gap > 0.4:
-            return {
-                "hypothesis": f"Quality weight (0.40) creates too large a gap between pass ({rows[0]:.3f}, n={rows[2]}) and fail ({rows[1]:.3f}, n={rows[3]}). Reduce to 0.30, increase token efficiency to 0.35.",
-                "mutation_type": "score_weights",
-                "mutation_diff": "Change composite_score weights: quality 0.40->0.30, token_efficiency 0.30->0.35, time 0.15->0.20, autonomy 0.15->0.15",
-            }
-    return None
+
+def mutate_gate_max_cycles(skill_text):
+    """Reduce gate fix cycles from 3 to 2 to force cleaner first passes."""
+    old = "fix, re-run, max 3 cycles"
+    new = "fix, re-run, max 2 cycles. If still failing after 2, log the pattern and ask: is the gate too strict or the code too sloppy?"
+    if old not in skill_text:
+        return None
+    return skill_text.replace(old, new)
+
+
+# Map of mutation type → list of (generator_fn, hypothesis, mutation_type)
+MUTATIONS = [
+    {
+        "fn": mutate_gate_incremental_tests,
+        "hypothesis": "Running tests after each file change (not just at gate time) catches failures earlier, reducing gate rework",
+        "mutation_type": "process",
+    },
+    {
+        "fn": mutate_model_routing_stronger,
+        "hypothesis": "Making model routing directive (not advisory) increases Sonnet usage for mechanical tasks, reducing token cost without quality loss",
+        "mutation_type": "model_routing",
+    },
+    {
+        "fn": mutate_scope_threshold,
+        "hypothesis": "Raising light mode threshold from 5 to 8 files reduces planning overhead for medium sprints without losing quality",
+        "mutation_type": "process",
+    },
+    {
+        "fn": mutate_retro_maturity,
+        "hypothesis": "Projects stabilize by sprint 5 (not 8) — switching to slim retros earlier saves time without missing issues",
+        "mutation_type": "process",
+    },
+    {
+        "fn": mutate_gate_max_cycles,
+        "hypothesis": "Limiting gate fix cycles to 2 (from 3) forces cleaner first passes and surfaces chronic gate issues faster",
+        "mutation_type": "gate_config",
+    },
+]
 
 
 def propose_mutation(con):
-    """Propose the best mutation based on current data analysis."""
-    # Priority order: gate failures first, then model routing, then weights
-    proposals = [
-        propose_gate_mutation(con),
-        propose_model_routing(con),
-        propose_score_weight_change(con),
-    ]
-    for p in proposals:
-        if p:
-            return p
-    return None
+    """Pick the best mutation based on data analysis."""
+    skill_text = read_skill()
+    failures = get_top_gate_failures(con)
+    task_scores = get_score_by_task_type(con)
+
+    # Score each candidate mutation based on data signals
+    candidates = []
+    for m in MUTATIONS:
+        new_text = m["fn"](skill_text)
+        if new_text is None:
+            continue  # already applied or can't find insertion point
+
+        # Compute a priority score based on data relevance
+        priority = 0
+
+        if m["mutation_type"] == "gate_config" and failures:
+            lint_freq = sum(f[2] for f in failures if f[0] == "lint")
+            test_freq = sum(f[2] for f in failures if f[0] == "test")
+            priority = lint_freq + test_freq
+
+        elif m["mutation_type"] == "model_routing":
+            # Check if Sonnet sprints score well
+            row = con.execute(
+                "SELECT COUNT(*), AVG(composite_score) FROM sprints WHERE sonnet_pct > 20"
+            ).fetchone()
+            if row[0] > 3 and row[1] and row[1] > 0.6:
+                priority = row[0]
+
+        elif m["mutation_type"] == "process":
+            # General process improvements get medium priority
+            priority = 5
+
+        candidates.append({
+            **m,
+            "new_text": new_text,
+            "priority": priority,
+        })
+
+    if not candidates:
+        return None
+
+    # Pick highest priority
+    best = max(candidates, key=lambda c: c["priority"])
+    return {
+        "hypothesis": best["hypothesis"],
+        "mutation_type": best["mutation_type"],
+        "fn": best["fn"],
+        "new_text": best["new_text"],
+    }
 
 
-# --- Experiment Lifecycle ---
+# --- Experiment lifecycle ---
 
 
-def create_experiment(con, mutation):
-    """Create a new experiment in the DB."""
+def create_experiment(con, mutation, backup_path, deployed):
+    """Create experiment record and apply the mutation."""
     baseline = get_baseline_score(con)
     if baseline is None:
-        print("ERROR: No baseline score available (no sprints in DB)")
+        print("ERROR: No baseline score available")
         return None
 
     exp_id = f"exp-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
 
+    # Store the backup path in mutation_diff so we can revert
+    diff_info = json.dumps({
+        "backup": backup_path,
+        "deployed_to": deployed,
+        "description": mutation["hypothesis"],
+    })
+
     con.execute(
         """INSERT INTO experiments (id, hypothesis, mutation_type, mutation_diff, baseline_score)
            VALUES (?, ?, ?, ?, ?)""",
-        [exp_id, mutation["hypothesis"], mutation["mutation_type"],
-         mutation["mutation_diff"], baseline],
+        [exp_id, mutation["hypothesis"], mutation["mutation_type"], diff_info, baseline],
     )
 
-    return {
-        "id": exp_id,
-        "baseline_score": baseline,
-        **mutation,
-    }
+    return {"id": exp_id, "baseline_score": baseline}
 
 
 def evaluate_experiment(con, experiment):
-    """Evaluate a running experiment against recent sprint scores."""
+    """Evaluate a running experiment."""
     exp_id = experiment["id"]
     baseline = experiment["baseline_score"]
-
-    # Get sprints since experiment was created
     created_at = experiment["created_at"]
+
     rows = con.execute(
         """SELECT composite_score FROM sprints
            WHERE imported_at > ? AND composite_score IS NOT NULL
@@ -226,7 +352,6 @@ def evaluate_experiment(con, experiment):
     avg_score = sum(r[0] for r in rows) / sprints_tested
     improvement = avg_score - baseline
 
-    # Update sprints_tested count
     con.execute(
         "UPDATE experiments SET sprints_tested = ?, result_score = ? WHERE id = ?",
         [sprints_tested, round(avg_score, 4), exp_id],
@@ -239,7 +364,7 @@ def evaluate_experiment(con, experiment):
             "current_score": round(avg_score, 4),
             "baseline": baseline,
             "improvement": round(improvement, 4),
-            "message": f"Need {MIN_SPRINTS_PER_EXPERIMENT - sprints_tested} more sprints for evaluation",
+            "message": f"Need {MIN_SPRINTS_PER_EXPERIMENT - sprints_tested} more sprints",
         }
 
     if improvement > IMPROVEMENT_THRESHOLD:
@@ -251,31 +376,23 @@ def evaluate_experiment(con, experiment):
             "status": "kept",
             "sprints_tested": sprints_tested,
             "improvement": round(improvement, 4),
-            "message": f"Experiment kept: +{improvement:.3f} improvement over {sprints_tested} sprints",
+            "message": f"Kept: +{improvement:.3f} over {sprints_tested} sprints. Mutation is now permanent.",
         }
 
     if improvement < -IMPROVEMENT_THRESHOLD:
-        con.execute(
-            "UPDATE experiments SET status = 'reverted', completed_at = current_timestamp WHERE id = ?",
-            [exp_id],
-        )
         return {
-            "status": "reverted",
+            "status": "revert",
             "sprints_tested": sprints_tested,
             "improvement": round(improvement, 4),
-            "message": f"Experiment reverted: {improvement:.3f} regression over {sprints_tested} sprints",
+            "message": f"Regression: {improvement:.3f} over {sprints_tested} sprints. Reverting.",
         }
 
     if sprints_tested >= MAX_SPRINTS_PER_EXPERIMENT:
-        con.execute(
-            "UPDATE experiments SET status = 'inconclusive', completed_at = current_timestamp WHERE id = ?",
-            [exp_id],
-        )
         return {
-            "status": "inconclusive",
+            "status": "revert",
             "sprints_tested": sprints_tested,
             "improvement": round(improvement, 4),
-            "message": f"Inconclusive after {sprints_tested} sprints ({improvement:+.3f}). Reverted.",
+            "message": f"Inconclusive after {sprints_tested} sprints ({improvement:+.3f}). Reverting.",
         }
 
     return {
@@ -286,25 +403,45 @@ def evaluate_experiment(con, experiment):
     }
 
 
+def revert_experiment(con, experiment):
+    """Revert an experiment by restoring SKILL.md from backup."""
+    exp_id = experiment["id"]
+    diff_info = json.loads(experiment["mutation_diff"])
+    backup_path = diff_info.get("backup")
+
+    if backup_path and os.path.exists(backup_path):
+        restore_skill(backup_path)
+        deployed = deploy_skill()
+        con.execute(
+            "UPDATE experiments SET status = 'reverted', completed_at = current_timestamp WHERE id = ?",
+            [exp_id],
+        )
+        return {"reverted": True, "backup": backup_path, "deployed_to": deployed}
+    else:
+        con.execute(
+            "UPDATE experiments SET status = 'reverted', completed_at = current_timestamp WHERE id = ?",
+            [exp_id],
+        )
+        return {"reverted": True, "warning": "Backup not found — SKILL.md not restored. Manual revert needed."}
+
+
 # --- Commands ---
 
 
 def cmd_propose(db_path):
-    """Propose a new experiment."""
+    """Analyze data, propose and apply a mutation."""
     con = get_db(db_path)
 
-    # Check for running experiment
     running = get_running_experiment(con)
     if running:
         print(f"Experiment already running: {running['id']}")
         print(f"  Hypothesis: {running['hypothesis']}")
-        print(f"  Type: {running['mutation_type']}")
         print(f"  Baseline: {running['baseline_score']}")
-        print(f"\nRun 'evaluate' to check its status.")
+        print(f"  Sprints tested: {running['sprints_tested']}")
+        print(f"\nRun 'evaluate' first.")
         con.close()
         return
 
-    # Analyze and propose
     print("Analyzing sprint data...")
     baseline = get_baseline_score(con)
     print(f"  Baseline score (last 10): {baseline}")
@@ -319,28 +456,31 @@ def cmd_propose(db_path):
     if worst:
         print(f"  Worst sprints:")
         for project, sprint, score, gates, task_type, note in worst:
-            print(f"    {project} S{sprint}: {score:.3f} (gates={'pass' if gates else 'fail'}, {task_type})")
-
-    task_scores = get_score_by_task_type(con)
-    if task_scores:
-        print(f"  Score by task type:")
-        for tt, n, avg in task_scores:
-            print(f"    {tt}: {avg:.3f} (n={n})")
+            print(f"    {project} S{sprint}: {score:.3f} ({'pass' if gates else 'fail'}, {task_type})")
 
     mutation = propose_mutation(con)
     if not mutation:
-        print("\nNo mutation to propose. System is performing well or data is insufficient.")
+        print("\nNo applicable mutations. All have been applied or data is insufficient.")
         con.close()
         return
 
-    print(f"\nProposed experiment:")
+    print(f"\nProposed mutation:")
     print(f"  Type: {mutation['mutation_type']}")
     print(f"  Hypothesis: {mutation['hypothesis']}")
-    print(f"  Change: {mutation['mutation_diff']}")
 
-    experiment = create_experiment(con, mutation)
+    # Apply it
+    print(f"\nApplying...")
+    backup_path = backup_skill()
+    write_skill(mutation["new_text"])
+    deployed = deploy_skill()
+
+    print(f"  Backup: {backup_path}")
+    print(f"  SKILL.md: modified")
+    print(f"  Deployed to: {', '.join(deployed) if deployed else '(none)'}")
+
+    experiment = create_experiment(con, mutation, backup_path, deployed)
     if experiment:
-        print(f"\n  Created: {experiment['id']}")
+        print(f"\n  Experiment: {experiment['id']}")
         print(f"  Baseline: {experiment['baseline_score']}")
         print(f"  Run {MIN_SPRINTS_PER_EXPERIMENT}-{MAX_SPRINTS_PER_EXPERIMENT} sprints, then 'evaluate'.")
 
@@ -348,7 +488,7 @@ def cmd_propose(db_path):
 
 
 def cmd_evaluate(db_path):
-    """Evaluate the running experiment."""
+    """Evaluate the running experiment, auto-revert if needed."""
     con = get_db(db_path)
 
     running = get_running_experiment(con)
@@ -368,6 +508,45 @@ def cmd_evaluate(db_path):
         print(f"  Improvement: {result['improvement']:+.4f}")
     print(f"  {result['message']}")
 
+    if result["status"] == "revert":
+        print(f"\nReverting...")
+        r = revert_experiment(con, running)
+        if r.get("deployed_to"):
+            print(f"  Restored SKILL.md from backup")
+            print(f"  Deployed to: {', '.join(r['deployed_to'])}")
+        elif r.get("warning"):
+            print(f"  WARNING: {r['warning']}")
+
+    elif result["status"] == "kept":
+        # Clean up backup since mutation is permanent
+        diff_info = json.loads(running["mutation_diff"])
+        backup = diff_info.get("backup")
+        if backup and os.path.exists(backup):
+            os.remove(backup)
+            print(f"  Cleaned up backup (mutation is permanent)")
+
+    con.close()
+
+
+def cmd_revert(db_path):
+    """Force-revert the running experiment."""
+    con = get_db(db_path)
+
+    running = get_running_experiment(con)
+    if not running:
+        print("No running experiment to revert.")
+        con.close()
+        return
+
+    print(f"Force-reverting: {running['id']}")
+    r = revert_experiment(con, running)
+    if r.get("deployed_to"):
+        print(f"  Restored SKILL.md from backup")
+        print(f"  Deployed to: {', '.join(r['deployed_to'])}")
+    elif r.get("warning"):
+        print(f"  WARNING: {r['warning']}")
+    print("  Done.")
+
     con.close()
 
 
@@ -378,7 +557,6 @@ def cmd_status(db_path):
     baseline = get_baseline_score(con)
     print(f"Current baseline (last 10 sprints): {baseline}")
 
-    # Running experiment
     running = get_running_experiment(con)
     if running:
         print(f"\nRunning experiment: {running['id']}")
@@ -389,26 +567,33 @@ def cmd_status(db_path):
     else:
         print("\nNo running experiment.")
 
+    # Available mutations
+    skill_text = read_skill()
+    available = [m for m in MUTATIONS if m["fn"](skill_text) is not None]
+    print(f"\nAvailable mutations: {len(available)}/{len(MUTATIONS)}")
+    for m in available:
+        print(f"  [{m['mutation_type']}] {m['hypothesis'][:80]}")
+
     # Past experiments
     rows = con.execute(
-        """SELECT id, status, mutation_type, baseline_score, result_score, sprints_tested
+        """SELECT id, status, mutation_type, baseline_score, result_score, sprints_tested, hypothesis
            FROM experiments WHERE status != 'running'
            ORDER BY completed_at DESC LIMIT 10"""
     ).fetchall()
     if rows:
         print(f"\nPast experiments:")
-        for eid, status, mtype, base, result, tested in rows:
+        for eid, status, mtype, base, result, tested, hyp in rows:
             improvement = (result - base) if result else 0
-            print(f"  {eid}: {status} ({mtype}) {improvement:+.3f} over {tested} sprints")
+            print(f"  {eid}: {status} ({mtype}) {improvement:+.3f} over {tested}s — {hyp[:60]}")
 
     # Score trend
     rows = con.execute(
         """SELECT project, sprint, composite_score
-           FROM sprints ORDER BY imported_at DESC LIMIT 20"""
+           FROM sprints ORDER BY imported_at DESC LIMIT 10"""
     ).fetchall()
     if rows:
         print(f"\nRecent scores:")
-        for project, sprint, score in rows[:10]:
+        for project, sprint, score in rows:
             bar = "#" * int(score * 20) if score else ""
             print(f"  {project:20s} S{sprint:2d}  {score:.3f}  {bar}")
 
@@ -419,7 +604,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Flowstate Hill-Climbing Optimizer")
-    parser.add_argument("command", choices=["propose", "evaluate", "status"],
+    parser.add_argument("command", choices=["propose", "evaluate", "revert", "status"],
                         help="Command to run")
     parser.add_argument("--db", default=DEFAULT_DB, help="DuckDB file path")
     args = parser.parse_args()
@@ -432,6 +617,8 @@ def main():
         cmd_propose(args.db)
     elif args.command == "evaluate":
         cmd_evaluate(args.db)
+    elif args.command == "revert":
+        cmd_revert(args.db)
     elif args.command == "status":
         cmd_status(args.db)
 

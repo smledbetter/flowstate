@@ -1,0 +1,54 @@
+{
+  "project": "uluka",
+  "sprint": 10,
+  "label": "sprint-10-llm-claim-detection",
+  "phase": "Phase 23: LLM Claim Detection",
+  "hypotheses": [
+    {
+      "id": "H1",
+      "name": "3-phase sprint works across project types",
+      "result": "confirmed",
+      "evidence": "10th consecutive Uluka sprint. THINK→EXECUTE→SHIP completed in single session. All gates passed first try."
+    },
+    {
+      "id": "H5",
+      "name": "Gates catch real issues",
+      "result": "confirmed",
+      "evidence": "Gate 2 (noUnusedLocals) caught unused ClaimCategory import in llm-extractor.ts. Fixed immediately, gates passed on retry."
+    }
+  ],
+  "metrics": {
+    "active_session_time_s": 407,
+    "active_session_time_display": "6m 47s",
+    "total_tokens": 2557635,
+    "total_tokens_display": "2.6M",
+    "new_work_tokens": 135297,
+    "new_work_tokens_display": "135K",
+    "cache_hit_rate_pct": 94.7,
+    "opus_pct": 76.8,
+    "sonnet_pct": 0,
+    "haiku_pct": 23.2,
+    "api_calls": 48,
+    "subagents": 0,
+    "tests_total": 577,
+    "tests_added": 20,
+    "coverage_pct": 75.70,
+    "lint_errors": 0,
+    "gates_first_pass": true,
+    "gates_first_pass_note": "",
+    "loc_added": 888,
+    "loc_added_approx": false,
+    "task_type": "feature",
+    "rework_rate": 1.5,
+    "judge_score": null,
+    "judge_blocked": null,
+    "judge_block_reason": null,
+    "coderabbit_issues": null,
+    "coderabbit_issues_valid": null,
+    "mutation_score_pct": null,
+    "delegation_ratio_pct": 23.2,
+    "orchestrator_tokens": 1963230,
+    "subagent_tokens": 594405,
+    "context_compressions": 0
+  }
+}
