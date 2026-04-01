@@ -1,0 +1,60 @@
+{
+  "project": "weaveto-do",
+  "sprint": 6,
+  "label": "WTD S6",
+  "phase": "M14 — Local Notifications",
+  "metrics": {
+    "active_session_time_s": 1738,
+    "active_session_time_display": "28m 58s",
+    "total_tokens": 13060688,
+    "total_tokens_display": "13.1M",
+    "new_work_tokens": 390092,
+    "new_work_tokens_display": "390K",
+    "cache_hit_rate_pct": 97.0,
+    "opus_pct": 57.0,
+    "sonnet_pct": 43.0,
+    "haiku_pct": 0,
+    "api_calls": 175,
+    "subagents": 5,
+    "tests_total": 505,
+    "tests_added": 46,
+    "coverage_pct": 58.56,
+    "lint_errors": 0,
+    "gates_first_pass": false,
+    "gates_first_pass_note": "E2E notification tests needed addInitScript for Notification.permission mocking (FEATURE class)",
+    "loc_added": 1804,
+    "loc_added_approx": false,
+    "task_type": "feature",
+    "rework_rate": 2.9,
+    "judge_score": null,
+    "judge_blocked": null,
+    "judge_block_reason": null,
+    "coderabbit_issues": null,
+    "coderabbit_issues_valid": null,
+    "mutation_score_pct": null,
+    "delegation_ratio_pct": 43.0,
+    "orchestrator_tokens": 7450036,
+    "subagent_tokens": 5610652,
+    "context_compressions": 0
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "name": "3-phase sprint works across project types",
+      "result": "confirmed",
+      "evidence": "Seventh project type (SW notifications + UI components). 3-phase workflow completed. All gates passed after 1 fix cycle. 5 atomic commits."
+    },
+    {
+      "id": "H5",
+      "name": "Gates catch real issues",
+      "result": "confirmed",
+      "evidence": "E2E gate caught that page.evaluate() after navigation doesn't update Svelte $state initializer — tests needed addInitScript before navigation. Also caught hidden checkbox (opacity:0) needing toBeAttached() instead of toBeVisible(). Both FEATURE class."
+    },
+    {
+      "id": "H7",
+      "name": "Skills are followed by agents",
+      "result": "confirmed",
+      "evidence": "5/5 H7 instructions compliant. All verified with process + code checks. See retrospective for full audit."
+    }
+  ]
+}

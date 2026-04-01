@@ -1,0 +1,60 @@
+{
+  "project": "weaveto-do",
+  "sprint": 5,
+  "label": "WTD S5",
+  "phase": "M13 \u2014 Mobile Identity Persistence",
+  "metrics": {
+    "active_session_time_s": 1275,
+    "active_session_time_display": "21m 15s",
+    "total_tokens": 13558499,
+    "total_tokens_display": "13.6M",
+    "new_work_tokens": 252793,
+    "new_work_tokens_display": "252K",
+    "cache_hit_rate_pct": 98.1,
+    "opus_pct": 96.3,
+    "sonnet_pct": 3.0,
+    "haiku_pct": 0.7,
+    "api_calls": 149,
+    "subagents": 5,
+    "tests_total": 484,
+    "tests_added": 27,
+    "coverage_pct": 57.21,
+    "lint_errors": 0,
+    "gates_first_pass": false,
+    "gates_first_pass_note": "E2E TS errors from Vite module path resolution in cycle 1; integration test burn flow needed DELETE confirmation fix in cycle 2",
+    "loc_added": 1391,
+    "loc_added_approx": false,
+    "task_type": "feature",
+    "rework_rate": 1.8,
+    "judge_score": null,
+    "judge_blocked": null,
+    "judge_block_reason": null,
+    "coderabbit_issues": null,
+    "coderabbit_issues_valid": null,
+    "mutation_score_pct": null,
+    "delegation_ratio_pct": 4.9,
+    "orchestrator_tokens": 12891080,
+    "subagent_tokens": 667419,
+    "context_compressions": 1
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "name": "3-phase sprint works across project types",
+      "result": "confirmed",
+      "evidence": "Sixth project type (crypto/IndexedDB persistence). 3-phase workflow completed. All gates passed after 2 fix cycles. 5 atomic commits."
+    },
+    {
+      "id": "H5",
+      "name": "Gates catch real issues",
+      "result": "confirmed",
+      "evidence": "E2E gate caught TS module resolution errors in cycle 1 and missing burn confirmation flow in integration tests in cycle 2. Both FEATURE-class fixes."
+    },
+    {
+      "id": "H7",
+      "name": "Skills are followed by agents",
+      "result": "confirmed",
+      "evidence": "5/5 H7 instructions compliant. All verified with process + code checks. IndexedDB seeds encrypted at rest, PRF path unchanged, cleanup integrated, PIN works with IDB seed."
+    }
+  ]
+}

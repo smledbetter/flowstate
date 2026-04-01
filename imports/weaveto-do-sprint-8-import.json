@@ -1,0 +1,61 @@
+{
+  "project": "weaveto-do",
+  "sprint": 8,
+  "label": "WTD S8",
+  "phase": "M16 — Web Push",
+  "metrics": {
+    "active_session_time_s": 501,
+    "active_session_time_display": "8m 21s",
+    "total_tokens": 10411361,
+    "total_tokens_display": "10.4M",
+    "new_work_tokens": 345812,
+    "new_work_tokens_display": "345K",
+    "cache_hit_rate_pct": 96.7,
+    "opus_pct": 37.2,
+    "sonnet_pct": 58.8,
+    "haiku_pct": 3.9,
+    "api_calls": 159,
+    "subagents": 5,
+    "delegation_ratio_pct": 64.4,
+    "orchestrator_tokens": 3704145,
+    "subagent_tokens": 6707216,
+    "context_compressions": 1,
+    "rework_rate": 2.7,
+    "tests_total": 562,
+    "tests_added": 44,
+    "coverage_pct": 58,
+    "lint_errors": 0,
+    "gates_first_pass": true,
+    "gates_first_pass_note": "",
+    "loc_added": 1596,
+    "loc_added_approx": false,
+    "task_type": "feature",
+    "rework_rate_pct": 2.7,
+    "judge_score": null,
+    "judge_blocked": null,
+    "judge_block_reason": null,
+    "coderabbit_issues": null,
+    "coderabbit_issues_valid": null,
+    "mutation_score_pct": null
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "name": "3-phase sprint works across project types",
+      "result": "confirmed",
+      "evidence": "Ninth project type (server-side crypto + push API + client IDB + SW). All gates first pass. 7 atomic commits. Context compressed once but workflow unaffected."
+    },
+    {
+      "id": "H5",
+      "name": "Gates catch real issues",
+      "result": "confirmed",
+      "evidence": "Gates passed first try. E2E: 160 passed, 47 pre-existing CSP failures (within baseline ~46 range). No regressions introduced."
+    },
+    {
+      "id": "H7",
+      "name": "Skills are followed by agents",
+      "result": "confirmed",
+      "evidence": "5/5 instructions compliant. Generic push payloads (Content-Length: 0). Push cleanup on destruction. User opt-in only. VAPID from env. SW self-contained."
+    }
+  ]
+}

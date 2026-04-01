@@ -1,0 +1,60 @@
+{
+  "project": "weaveto-do",
+  "sprint": 4,
+  "label": "WTD S4",
+  "phase": "M12 \u2014 Mobile UX Improvements",
+  "metrics": {
+    "active_session_time_s": 1496,
+    "active_session_time_display": "24m 56s",
+    "total_tokens": 18481855,
+    "total_tokens_display": "18.5M",
+    "new_work_tokens": 430937,
+    "new_work_tokens_display": "430K",
+    "cache_hit_rate_pct": 97.7,
+    "opus_pct": 80.2,
+    "sonnet_pct": 19.8,
+    "haiku_pct": 0,
+    "api_calls": 239,
+    "subagents": 4,
+    "tests_total": 575,
+    "tests_added": 22,
+    "coverage_pct": 57.19,
+    "lint_errors": 0,
+    "gates_first_pass": false,
+    "gates_first_pass_note": "E2E gate failed 2 cycles: CoachMarks localStorage migration broke fixtures, old .solo-banner selector in smoke test",
+    "loc_added": 1869,
+    "loc_added_approx": false,
+    "task_type": "feature",
+    "rework_rate": 2.8,
+    "judge_score": null,
+    "judge_blocked": null,
+    "judge_block_reason": null,
+    "coderabbit_issues": null,
+    "coderabbit_issues_valid": null,
+    "mutation_score_pct": null,
+    "delegation_ratio_pct": 20.7,
+    "orchestrator_tokens": 14661877,
+    "subagent_tokens": 3819978,
+    "context_compressions": 1
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "name": "3-phase sprint works across project types",
+      "result": "confirmed",
+      "evidence": "Fifth project type (UX/mobile). 3-phase workflow completed. All gates passed after 2 E2E fix cycles."
+    },
+    {
+      "id": "H5",
+      "name": "Gates catch real issues",
+      "result": "confirmed",
+      "evidence": "E2E gate caught 84 failures (vs 46 baseline) from CoachMarks sessionStorage\u2192localStorage migration. Identified 2 distinct root causes across fixtures.ts, smoke.spec.ts, and invite.spec.ts. Both were FEATURE-class (test updates for redesigned UX, not code bugs)."
+    },
+    {
+      "id": "H7",
+      "name": "Skills are followed by agents",
+      "result": "confirmed",
+      "evidence": "All 5 H7 instructions compliant. Zero console statements in new client code. CoachMarks 100% coverage, MobileNav 100% coverage. Header toggles hidden on mobile via CSS. 3 informational banners gated by walkthrough, 2 urgent banners ungated. Desktop layout unchanged (bottom nav display:none above 768px)."
+    }
+  ]
+}

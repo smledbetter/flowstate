@@ -1,0 +1,61 @@
+{
+  "project": "weaveto-do",
+  "sprint": 11,
+  "label": "WTD S11",
+  "phase": "M19 — Multi-Room Tabs",
+  "metrics": {
+    "active_session_time_s": 536,
+    "active_session_time_display": "8m 56s",
+    "total_tokens": 5163041,
+    "total_tokens_display": "5.2M",
+    "new_work_tokens": 238092,
+    "new_work_tokens_display": "238K",
+    "cache_hit_rate_pct": 95.0,
+    "opus_pct": 72.0,
+    "sonnet_pct": 17.3,
+    "haiku_pct": 10.7,
+    "api_calls": 89,
+    "subagents": 7,
+    "delegation_ratio_pct": 28.0,
+    "orchestrator_tokens": 3716381,
+    "subagent_tokens": 1446660,
+    "context_compressions": 0,
+    "rework_rate_pct": 2.3,
+    "tests_total": 647,
+    "tests_added": 36,
+    "coverage_pct": 60,
+    "lint_errors": 0,
+    "gates_first_pass": true,
+    "gates_first_pass_note": null,
+    "loc_added": 1224,
+    "loc_added_approx": false,
+    "task_type": "feature",
+    "rework_rate": 2.3,
+    "judge_score": null,
+    "judge_blocked": null,
+    "judge_block_reason": null,
+    "coderabbit_issues": null,
+    "coderabbit_issues_valid": null,
+    "mutation_score_pct": null
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "name": "3-phase sprint works across project types",
+      "result": "confirmed",
+      "evidence": "Twelfth project type (BroadcastChannel cross-tab coordination). All gates first pass. 5 atomic commits. 8m 56s active time."
+    },
+    {
+      "id": "H5",
+      "name": "Gates catch real issues",
+      "result": "confirmed",
+      "evidence": "Gates passed first try. 647 unit tests, 171 E2E passed. No regressions. svelte-check 26 warnings (matches baseline)."
+    },
+    {
+      "id": "H7",
+      "name": "Skills are followed by agents",
+      "result": "confirmed",
+      "evidence": "5/5 instructions compliant. PRF seed shared via IDB (no cross-tab key sharing). Tab-scoped cleanup. PIN lock broadcast. Independent Olm/Megolm per tab. Multi-tab E2E tests pass."
+    }
+  ]
+}

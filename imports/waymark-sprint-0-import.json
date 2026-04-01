@@ -1,0 +1,66 @@
+{
+  "project": "waymark",
+  "sprint": 0,
+  "label": "Waymark S0",
+  "phase": "Project Setup (planning only)",
+  "metrics": {
+    "active_session_time_s": 491,
+    "active_session_time_display": "8m 11s",
+    "total_tokens": 3783891,
+    "total_tokens_display": "3.8M",
+    "new_work_tokens": 164855,
+    "new_work_tokens_display": "164K",
+    "cache_hit_rate_pct": 95.3,
+    "opus_pct": 62.1,
+    "sonnet_pct": 37.9,
+    "haiku_pct": 0,
+    "api_calls": 73,
+    "subagents": 4,
+    "delegation_ratio_pct": 37.9,
+    "orchestrator_tokens": 2350501,
+    "subagent_tokens": 1433390,
+    "context_compressions": 0,
+    "rework_rate": 2.6,
+    "tests_total": 0,
+    "tests_added": 0,
+    "coverage_pct": null,
+    "lint_errors": 0,
+    "gates_first_pass": null,
+    "gates_first_pass_note": "planning sprint -- no code gates",
+    "loc_added": 988,
+    "loc_added_approx": false,
+    "task_type": "planning",
+    "judge_score": null,
+    "judge_blocked": null,
+    "judge_block_reason": null,
+    "coderabbit_issues": null,
+    "coderabbit_issues_valid": null,
+    "mutation_score_pct": null
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "name": "3-phase sprint works across project types",
+      "result": "confirmed",
+      "evidence": "Sprint 0 followed the 3-phase structure (research, plan, ship) for a greenfield React/TypeScript PWA. The process produced a roadmap, conventions, baseline, and tech stack research. The structure worked naturally for a planning-only sprint."
+    },
+    {
+      "id": "H5",
+      "name": "Gates catch real issues",
+      "result": "inconclusive",
+      "evidence": "No code gates to run in Sprint 0 (planning only). Gate commands were defined and verified as appropriate for the stack. Will be testable starting Sprint 1."
+    },
+    {
+      "id": "H7",
+      "name": "Skills are followed by agents",
+      "result": "partially_confirmed",
+      "evidence": "Architect skill guided dependency selection (MapLibre over Mapbox, noble over libsodium -- boring technology, open source first). Security auditor perspective shaped encryption recommendations (scrypt over PBKDF2, AES-KW for key wrapping). PM skill was not directly exercised (no Gherkin criteria written in Sprint 0)."
+    },
+    {
+      "id": "H11",
+      "name": "Flowstate works for greenfield projects",
+      "result": "confirmed",
+      "evidence": "Sprint 0 produced all required artifacts for a greenfield project: roadmap (10 phases), conventions, baseline, gate commands. The process naturally handled the 'no existing code' case. Tech stack research via 4 parallel subagents was efficient."
+    }
+  ]
+}

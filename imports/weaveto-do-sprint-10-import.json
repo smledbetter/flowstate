@@ -1,0 +1,61 @@
+{
+  "project": "weaveto-do",
+  "sprint": 10,
+  "label": "WTD S10",
+  "phase": "M18 — Sync and Conflict Resolution",
+  "metrics": {
+    "active_session_time_s": 299,
+    "active_session_time_display": "4m 59s",
+    "total_tokens": 5032765,
+    "total_tokens_display": "5.0M",
+    "new_work_tokens": 177441,
+    "new_work_tokens_display": "177K",
+    "cache_hit_rate_pct": 96.5,
+    "opus_pct": 48.3,
+    "sonnet_pct": 43.1,
+    "haiku_pct": 8.6,
+    "api_calls": 76,
+    "subagents": 4,
+    "delegation_ratio_pct": 51.7,
+    "orchestrator_tokens": 2431798,
+    "subagent_tokens": 2600967,
+    "context_compressions": 0,
+    "rework_rate": 2.4,
+    "tests_total": 611,
+    "tests_added": 29,
+    "coverage_pct": 58,
+    "lint_errors": 0,
+    "gates_first_pass": true,
+    "gates_first_pass_note": null,
+    "loc_added": 821,
+    "loc_added_approx": false,
+    "task_type": "feature",
+    "rework_rate_pct": 2.4,
+    "judge_score": null,
+    "judge_blocked": null,
+    "judge_block_reason": null,
+    "coderabbit_issues": null,
+    "coderabbit_issues_valid": null,
+    "mutation_score_pct": null
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "name": "3-phase sprint works across project types",
+      "result": "confirmed",
+      "evidence": "Eleventh project type (sync protocol + conflict resolution). All gates first pass. 4 atomic commits. Fastest sprint (4m 59s)."
+    },
+    {
+      "id": "H5",
+      "name": "Gates catch real issues",
+      "result": "confirmed",
+      "evidence": "Gates passed first try. 171 E2E passed. No regressions. Conflict resolution tests verify convergence."
+    },
+    {
+      "id": "H7",
+      "name": "Skills are followed by agents",
+      "result": "confirmed",
+      "evidence": "5/5 instructions compliant. Sync via Megolm. Same applyEvent conflict rules. Optimistic UI. Event convergence. Sync indicator."
+    }
+  ]
+}

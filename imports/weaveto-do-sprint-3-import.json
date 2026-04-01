@@ -1,0 +1,65 @@
+{
+  "project": "weaveto-do",
+  "sprint": 3,
+  "label": "WTD S3",
+  "phase": "M11 — Reconnect & Hardening",
+  "metrics": {
+    "active_session_time_s": 2002,
+    "active_session_time_display": "33m 22s",
+    "total_tokens": 11228071,
+    "total_tokens_display": "11.2M",
+    "new_work_tokens": 410634,
+    "new_work_tokens_display": "410K",
+    "cache_hit_rate_pct": 96.3,
+    "opus_pct": 61.6,
+    "sonnet_pct": 27.7,
+    "haiku_pct": 10.6,
+    "api_calls": 165,
+    "subagents": 4,
+    "delegation_ratio_pct": 38.6,
+    "orchestrator_tokens": 6898759,
+    "subagent_tokens": 4329312,
+    "context_compressions": 0,
+    "rework_rate": 3.5,
+    "tests_total": 419,
+    "tests_added": 27,
+    "coverage_pct": null,
+    "lint_errors": 0,
+    "gates_first_pass": true,
+    "gates_first_pass_note": "",
+    "loc_added": 1053,
+    "loc_added_approx": false,
+    "task_type": "hardening",
+    "rework_rate_pct": 3.5,
+    "judge_score": null,
+    "judge_blocked": null,
+    "judge_block_reason": null,
+    "coderabbit_issues": null,
+    "coderabbit_issues_valid": null,
+    "mutation_score_pct": null,
+    "delegation_ratio_pct": 38.6,
+    "orchestrator_tokens": 6898759,
+    "subagent_tokens": 4329312,
+    "context_compressions": 0
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "name": "3-phase sprint works across project types",
+      "result": "confirmed",
+      "evidence": "Fourth project type (hardening/crypto-operational). 3-phase workflow completed: consensus planning, 4-wave parallel execution, gate verification. All gates passed first try."
+    },
+    {
+      "id": "H5",
+      "name": "Gates catch real issues",
+      "result": "confirmed",
+      "evidence": "E2E gate surfaced baseline discrepancy (28 claimed vs 33 actual pre-existing failures). Isolation testing methodology required to distinguish regressions from pre-existing failures. Gate integrity feedback caught misleading initial comparison."
+    },
+    {
+      "id": "H7",
+      "name": "Skills are followed by agents",
+      "result": "confirmed",
+      "evidence": "All 5 H7 instructions audited (see retro). Security: notification payloads generic (N/A — no notifications in M11). Prod-eng: 27 new tests, all behavioral. UX: no permission auto-requesting. Architect: no crypto parallelism. PM: Gherkin acceptance criteria with failure scenarios."
+    }
+  ]
+}
