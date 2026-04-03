@@ -4,7 +4,7 @@ I built a system that ran 130+ autonomous AI agent sprints across 16 projects, t
 
 ## What Flowstate Is
 
-Flowstate is a sprint-based development workflow for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Each sprint follows a three-phase cycle (Think, Execute, Ship) with automated quality gates that enforce test passage, coverage baselines, and clean builds. A metrics pipeline collects token usage, session time, and code output per sprint into DuckDB. On top of that data sits a cross-project lesson extractor (229 lessons ranked by Bayesian confidence), a gate failure classifier (66 failures across 43 lint, 20 test, 3 coverage), and a hill-climbing optimizer that proposes mutations to the agent's own instructions, waits for sprint data, and keeps or reverts based on composite score movement.
+Flowstate is a sprint-based development workflow for [Claude Code](https://docs.anthropic.com/en/docs/claude-code). Each sprint follows a three-phase cycle (Think, Execute, Ship) with automated quality gates that enforce test passage, coverage baselines, and clean builds. A metrics pipeline collects token usage, session time, and code output per sprint into a DuckDB-backed SQL analytics layer with queryable schemas and a dashboard serving per-sprint metrics across 130+ sprints and 16 projects. On top of that data sits a cross-project lesson extractor (229 lessons ranked by Bayesian confidence), a gate failure classifier (66 failures across 43 lint, 20 test, 3 coverage), and a hill-climbing optimizer that proposes process mutations, waits for real sprint data, then keeps or reverts changes based on measured outcomes.
 
 ## Architecture
 
@@ -50,7 +50,7 @@ Flowstate includes a controlled experiment framework for testing whether workflo
 | Cross-project lessons | -3.3 (better) | Inside 10-13% noise floor -- inconclusive |
 | Lint x Lessons interaction | +18.0 (worse) | Interference, not synergy |
 
-Instruction-level mutations do not move the needle. The noise floor from LLM stochasticity (10-13% between identical replicates) is the dominant factor.
+The noise floor from LLM stochasticity (10-13% between identical replicates) makes small effects hard to isolate in short-lived experiment builds. Lint pre-check was dropped (measurably net negative). Cross-project lessons and the other v1.2 mutations (gate failure memory, coverage floor, model routing) remain active across real projects -- the experiment couldn't confirm they help at small N, but it also couldn't rule out compounding benefits over longer timescales. Real projects running 15-20+ sprints are the actual test bed.
 
 **v1.3: Codebase Map Injection** -- Matched-pair, 2 products (notegrep TS, pollster Python), 10 sprints each, control vs. structural context injection.
 
@@ -59,7 +59,7 @@ Instruction-level mutations do not move the needle. The noise floor from LLM sto
 | notegrep | -2.4% (noise) | No difference |
 | pollster | +8.0% (map worse) | No difference |
 
-Structural context injection does not help either. No learning curve divergence in either product.
+Codebase map injection showed no benefit -- the agent orients itself well enough without a pre-built map. Not shipped.
 
 ## Key Numbers
 
