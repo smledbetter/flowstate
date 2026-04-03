@@ -88,17 +88,18 @@ def deploy_skill():
                 deployed.append(project_dir.name)
 
     # VPS projects (best-effort)
-    ssh_key = os.path.expanduser("~/.ssh/claude-dev-droplet")
+    vps_host = os.environ.get("FLOWSTATE_VPS_HOST", "100.87.64.104")
+    ssh_key = os.environ.get("FLOWSTATE_VPS_SSH_KEY", os.path.expanduser("~/.ssh/claude-dev-droplet"))
     if os.path.exists(ssh_key):
         try:
             # Copy to VPS temp
             subprocess.run(
-                ["scp", "-i", ssh_key, SKILL_PATH, "dev@100.87.64.104:/tmp/SKILL-optimized.md"],
+                ["scp", "-i", ssh_key, SKILL_PATH, f"dev@{vps_host}:/tmp/SKILL-optimized.md"],
                 capture_output=True, timeout=10,
             )
             # Deploy to all VPS projects
             result = subprocess.run(
-                ["ssh", "-i", ssh_key, "-o", "ConnectTimeout=5", "dev@100.87.64.104",
+                ["ssh", "-i", ssh_key, "-o", "ConnectTimeout=5", f"dev@{vps_host}",
                  "for f in /home/dev/projects/*/.claude/skills/flowstate/SKILL.md; do "
                  "[ -f \"$f\" ] && cp /tmp/SKILL-optimized.md \"$f\" && "
                  "echo $(basename $(dirname $(dirname $(dirname \"$f\")))); done"],
@@ -106,8 +107,8 @@ def deploy_skill():
             )
             vps_projects = [p.strip() for p in result.stdout.strip().split("\n") if p.strip()]
             deployed.extend([f"vps:{p}" for p in vps_projects])
-        except Exception:
-            pass  # VPS unreachable, skip
+        except (subprocess.SubprocessError, OSError) as e:
+            print(f"VPS deploy skipped: {e}", file=sys.stderr)
 
     return deployed
 
@@ -251,7 +252,13 @@ MUTATIONS = [
 
 
 def propose_mutation(con):
-    """Pick the best mutation based on data analysis."""
+    """Analyze sprint data and select the highest-priority applicable mutation.
+
+    Scores each candidate mutation against gate failure frequency, Sonnet usage
+    patterns, and general process priority. Returns the best candidate as a dict
+    with hypothesis, mutation_type, fn, and new_text, or None if no mutations
+    are applicable (all already applied or insertion points missing).
+    """
     skill_text = read_skill()
     failures = get_top_gate_failures(con)
     task_scores = get_score_by_task_type(con)
@@ -331,7 +338,13 @@ def create_experiment(con, mutation, backup_path, deployed):
 
 
 def evaluate_experiment(con, experiment):
-    """Evaluate a running experiment."""
+    """Evaluate a running experiment against its baseline score.
+
+    Compares average composite scores of sprints completed since the experiment
+    started to the pre-experiment baseline. Returns a status dict: 'kept' if
+    improvement exceeds threshold, 'revert' if regression detected or max
+    sprints reached without clear signal, 'running' if more data needed.
+    """
     exp_id = experiment["id"]
     baseline = experiment["baseline_score"]
     created_at = experiment["created_at"]

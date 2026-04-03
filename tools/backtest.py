@@ -134,37 +134,39 @@ def study_3(con):
 # ---------------------------------------------------------------------------
 
 def mann_whitney_u(a, b):
-    """Simple Mann-Whitney U test. Returns U statistic and approximate p-value."""
+    """Mann-Whitney U test. Returns U statistic and approximate two-tailed p-value.
+
+    Tries scipy.stats.mannwhitneyu first for correctness (exact p-values for
+    small samples, proper tie correction). Falls back to a hand-rolled version
+    with average-rank tie handling and normal approximation.
+    """
+    try:
+        from scipy.stats import mannwhitneyu as _mwu
+        stat, p = _mwu(a, b, alternative='two-sided')
+        return stat, p
+    except ImportError:
+        pass
+
     combined = [(v, 'a') for v in a] + [(v, 'b') for v in b]
     combined.sort(key=lambda x: x[0])
 
-    # Assign ranks (handle ties with average rank)
-    ranks = {}
+    # Assign average ranks for ties
+    n = len(combined)
+    avg_ranks = [0.0] * n
     i = 0
-    while i < len(combined):
+    while i < n:
         j = i
-        while j < len(combined) and combined[j][0] == combined[i][0]:
+        while j < n and combined[j][0] == combined[i][0]:
             j += 1
-        avg_rank = (i + j + 1) / 2  # 1-indexed
+        avg_rank = (i + j + 1) / 2  # 1-indexed average rank for this tie group
         for k in range(i, j):
-            if combined[k] not in ranks:
-                ranks[id(combined[k])] = []
-            ranks[id(combined[k])] = avg_rank
+            avg_ranks[k] = avg_rank
         i = j
 
-    # Compute rank sums per group
-    rank_a = []
-    rank_b = []
-    for idx, (v, grp) in enumerate(combined):
-        # Recompute rank for this position
-        r = idx + 1  # simplified
-        if grp == 'a':
-            rank_a.append(r)
-        else:
-            rank_b.append(r)
+    # Compute rank sums per group using the averaged ranks
+    R_a = sum(avg_ranks[i] for i in range(n) if combined[i][1] == 'a')
 
     n_a, n_b = len(a), len(b)
-    R_a = sum(rank_a)
     U_a = R_a - n_a * (n_a + 1) / 2
     U_b = n_a * n_b - U_a
     U = min(U_a, U_b)
@@ -181,8 +183,13 @@ def mann_whitney_u(a, b):
 
 
 def _norm_cdf(x):
-    """Approximate normal CDF."""
-    # Abramowitz and Stegun approximation
+    """Approximate normal CDF using Abramowitz and Stegun formula 7.1.26.
+
+    This rational approximation has a maximum absolute error of ~1.5e-7, which
+    is adequate for hypothesis testing p-values. For extreme z-values (|z| > 6)
+    the approximation loses precision; in practice this only matters for very
+    small p-values that are well below any reasonable significance threshold.
+    """
     a1, a2, a3, a4, a5 = 0.254829592, -0.284496736, 1.421413741, -1.453152027, 1.061405429
     p = 0.3275911
     sign = 1 if x >= 0 else -1

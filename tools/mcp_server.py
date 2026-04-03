@@ -67,7 +67,7 @@ def api_available():
     try:
         api_call("/score", params={"last_n": "1"})
         return True
-    except Exception:
+    except (urllib.error.URLError, OSError, RuntimeError):
         return False
 
 

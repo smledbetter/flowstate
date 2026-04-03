@@ -16,7 +16,7 @@ Two features with the strongest prior evidence, crossed:
 - **Lint pre-check** (backtest ceiling: +0.40 composite score on 43 lint-failure sprints)
 - **Cross-project lessons** (229 lessons seeded, Bayesian confidence ranking)
 
-Condition D is lint + lessons only — a clean 2x2 cell. A 5th condition (E: full v1.2 bundle) runs outside the factorial as a separate descriptive comparison.
+Condition D is lint + lessons only — a clean 2x2 cell. ~~A 5th condition (E: full v1.2 bundle) was dropped after Pilot 2.~~
 
 ### Why not test all features individually?
 
@@ -24,7 +24,9 @@ Condition D is lint + lessons only — a clean 2x2 cell. A 5th condition (E: ful
 
 ## Products: 8 small-scope builds
 
-Each product is built under all 4 factorial conditions (A-D) = 32 builds. Products 1-3 also get Condition E (full bundle) = 3 extra builds. Plus 2 replicates = 37 builds total. Products are the blocking factor (paired/matched design eliminates between-product variance).
+Each product is built under all 4 factorial conditions (A-D) = 32 builds. Plus 2 replicates = 34 builds total. Products are the blocking factor (paired/matched design eliminates between-product variance).
+
+**Condition E dropped** after Pilot 2: D (lint+lessons) showed no interaction effect on either pilot product, so the full bundle comparison adds cost without insight. The 2x2 factorial (A-D) is sufficient.
 
 ### Product specifications
 
@@ -76,11 +78,9 @@ Products 1 and 2 are each built twice under condition A (v1.1 baseline) to estim
 - NO gate failure memory, NO coverage floor, NO model routing
 - Clean 2x2 cell: tests whether lint + lessons together match the additive prediction (C + B - A)
 
-### Condition E: full v1.2 bundle (outside factorial)
-- SKILL.md: v1.2 (all features active — lint pre-check, lessons, gate failure memory, coverage floor, model routing)
-- Lesson corpus: frozen snapshot (same as B and D)
-- Runs for products 1-3 only (not all 8 — cost control)
-- Compared descriptively to conditions A and D. Cannot attribute gains to specific features beyond lint + lessons.
+### ~~Condition E: full v1.2 bundle~~ (DROPPED)
+
+Dropped after Pilot 2. D showed no interaction effect on either pilot product (fconv, presskit), making the full-bundle descriptive comparison uninformative. Saves 3 builds.
 
 ### Lesson corpus freezing
 
@@ -182,7 +182,7 @@ No significance-based go/no-go. We report:
 1. **Per-product paired differences** for each co-primary metric (condition X - condition A), with 95% bootstrap CIs
 2. **Lint pre-check main effect**: avg of (C,D) minus avg of (A,B) — on gates rate (mechanical), token efficiency (independent), session time (independent), sprints to ship (independent)
 3. **Lessons main effect**: avg of (B,D) minus avg of (A,C) — on all four co-primary metrics (all independent of lessons treatment)
-4. **Bundle test (not interaction)**: Does D perform at least as well as the additive prediction (C + B - A)? This tests whether the full v1.2 bundle has synergy or interference, but cannot attribute any D-specific effect to lint x lessons interaction because D includes 3 additional features. Reported descriptively, not as a hypothesis test.
+4. **Interaction test**: Does D perform at least as well as the additive prediction (C + B - A)? This tests whether lint + lessons together have synergy or interference.
 5. **Within-product replicate variance** (from products 1-2 condition A replicates) as the noise floor
 6. **Individual sprint trajectories** per build (metrics over time)
 7. **Lint activation analysis**: intent-to-treat vs treatment-on-treated for conditions C and D
@@ -225,7 +225,7 @@ Build product 1 under conditions A and D only (2 builds). Goals:
 
 ### Pilot 2: Variance + effect size estimate (8-10 hours)
 
-Build products 1-2 under all 4 conditions + Condition E for product 1 + 2 replicates of condition A (11 builds). Goals:
+Build products 1-2 under all 4 conditions + 2 replicates of condition A (10 builds). Goals:
 - Estimate within-product variance from replicates (the noise floor)
 - Estimate between-condition effect sizes on co-primary metrics
 - Set decision thresholds for H1 based on observed noise floor
@@ -238,7 +238,7 @@ Build products 1-2 under all 4 conditions + Condition E for product 1 + 2 replic
 
 ### Full experiment (10-14 hours)
 
-Build products 3-8 under all 4 conditions + Condition E for products 2-3 (26 builds). Analyze all 37 builds together.
+Build products 3-8 under all 4 conditions (24 builds). Analyze all 34 builds together.
 
 ## Deliverable
 
@@ -247,7 +247,7 @@ Blog post: "I Built 8 Products 4 Ways to Test Whether AI Agents Can Optimize The
 Structure:
 1. What Flowstate is (brief)
 2. What v1.2 added (autolearning, lint pre-check, the hill-climbing loop)
-3. The experiment: 2x2 factorial, 8 products, 34 builds, ~200 sprints
+3. The experiment: 2x2 factorial, 8 products, 34 builds (Condition E dropped after Pilot 2), ~200 sprints
 4. What we measured (4 co-primary metrics, why no single composite)
 5. Results by feature: lint pre-check effect (with activation rates), lessons effect, full bundle
 6. The noise floor: how much LLM stochasticity matters (replicate data)
@@ -258,7 +258,7 @@ All four outcomes (strong positive, weak positive, null, negative) are publishab
 
 ## Limitations (pre-registered)
 
-- **Condition D is lint + lessons only.** The interaction effect tests additivity, not synergy with other v1.2 features. Condition E (full bundle, products 1-3 only) provides descriptive comparison but cannot attribute gains.
+- **Condition D is lint + lessons only.** The interaction effect tests additivity, not synergy with other v1.2 features. Condition E was dropped after Pilot 2 showed no interaction effect.
 - **N=8 is exploratory.** Effect size estimates are the primary deliverable, not p-values. A powered confirmatory follow-up would require N based on the variance observed here.
 - **Bootstrap CIs at N=8 have ~88-92% coverage**, not 95%. Disclosed in all reporting.
 - **H2 (lessons) is likely underpowered.** Designated exploratory. We report the estimate regardless.

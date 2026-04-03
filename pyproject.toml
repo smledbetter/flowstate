@@ -1,0 +1,13 @@
+[project]
+name = "flowstate"
+version = "1.2.0"
+description = "Sprint-based development workflow for Claude Code with automated metrics, optimization, and experiment framework"
+requires-python = ">=3.9"
+authors = [{ name = "Steve Ledbetter" }]
+
+[project.optional-dependencies]
+db = ["duckdb>=0.9"]
+test = ["pytest>=7.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

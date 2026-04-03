@@ -546,7 +546,7 @@ def import_from_file(path, dry_run=False):
     except ImportError:
         print(f"  DuckDB: skipped (duckdb not installed)")
     except Exception as e:
-        print(f"  DuckDB: warning — {e}")
+        print(f"  DuckDB: warning — {e}", file=sys.stderr)
 
     print(f"\n  Next steps:")
     print(f"    1. Review: cat sprints.json | python3 -m json.tool | tail -50")

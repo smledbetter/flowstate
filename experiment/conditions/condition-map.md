@@ -106,21 +106,10 @@ Read these files first:
 - `docs/ROADMAP.md` (find this sprint's phase)
 - The current baseline (see above)
 - `{FLOWSTATE}/progress.md` (if exists -- operational state from last session)
+- `{FLOWSTATE}/codebase-map.md` (if exists -- structural map of the codebase: file tree, module dependencies, key patterns. Use this to understand where new code should go and how it integrates with existing modules. Do not re-explore files the map already describes.)
 - `{FLOWSTATE}/flowstate.config.md`
 - The previous sprint's retro (if exists)
 - All files in `.claude/skills/`
-- Cross-project lessons (if provided in your launch prompt -- see below)
-
-### Cross-Project Learnings
-
-If your launch prompt includes a "Cross-Project Learnings" section, read it. These are patterns learned from other Flowstate projects, ranked by confidence. Apply them where relevant to this sprint. Do not apply lessons that conflict with this project's specific conventions in CLAUDE.md.
-
-### Gate Failure Memory
-
-Before starting implementation, check recent gate failures for this project:
-- Call `mcp__flowstate__get_gate_failures` with `project` and `limit=5`
-- Review the patterns. If the same `error_summary` appears 2+ times, add a specific preventive step to your implementation plan (e.g., "run lint after each file change" if lint failures recur).
-- Common recurring failures should be addressed BEFORE writing code, not after gates catch them.
 
 ### Scope Check (do this FIRST)
 
@@ -161,15 +150,6 @@ Label tests honestly by what they actually verify:
 - **End-to-end test**: starts the system in its actual deployment configuration, sends input through the real entry point, asserts output through the real exit point. Runs against a live (or realistic) environment, not mocked stages.
 
 Do NOT call a one-shot integration test "end-to-end" — this creates false confidence. If a system runs continuously (pipelines, servers, watchers), an E2E test must run it continuously too.
-
-### Model Routing
-
-When launching subagents for specific task types, use cost-appropriate models:
-- **Opus (default)**: architecture decisions, feasibility checks, scope planning, complex implementation
-- **Sonnet**: lint fixes, test generation from patterns, retrospective writing, documentation
-- **Haiku**: simple file operations, formatting fixes
-
-Follow this routing for subagent tasks. Opus for decisions, Sonnet for mechanical work. This saves ~40% on token costs for test generation and lint fixes with no measured quality impact.
 
 ### EXECUTE
 
@@ -283,7 +263,11 @@ If any script outputs to stdout in a pipeline (pipes to another process), it mus
 
 5. **Commit**: `git add -A && git commit -m "sprint N: [description]"`
 
-6. **Update Mission Control** (if `mcp__mission_control__update_project_status` is available):
+6. **Generate codebase map** (sprint 2+ only — skip for sprints 0 and 1):
+   Run: `bash /home/dev/experiment/mapgen.sh "$(pwd)" "{FLOWSTATE}" N`
+   This generates `{FLOWSTATE}/codebase-map.md` — a structural map of the codebase that will be injected into the next sprint's context.
+
+7. **Update Mission Control** (if `mcp__mission_control__update_project_status` is available):
    - Call `mcp__mission_control__update_project_status` with:
      - `slug`: `flowstate`
      - `status`: "running" (or "complete" if this was the last phase in the roadmap)
@@ -294,26 +278,14 @@ If any script outputs to stdout in a pipeline (pipes to another process), it mus
      - `status`: "done"
    - If the MCP server is unreachable, log a warning and continue — this is best-effort, never blocking.
 
-7. **Write next baseline** at `{FLOWSTATE}/metrics/baseline-sprint-{N+1}.md`:
+8. **Write next baseline** at `{FLOWSTATE}/metrics/baseline-sprint-{N+1}.md`:
    - Current git SHA, test count, coverage %, lint error count
    - Gate commands and current status
    - Quality audit uses the 4 fixed instructions above -- no rotation needed
 
-8. **Update roadmap**: mark this phase done in `docs/ROADMAP.md`, update Current State section
+9. **Update roadmap**: mark this phase done in `docs/ROADMAP.md`, update Current State section
 
-9. **Record lessons and gate failures to DuckDB** (if `mcp__flowstate__record_lesson` is available):
-   - For each NEW learning added to progress.md this sprint (not carried-forward ones):
-     call `mcp__flowstate__record_lesson` with `text`, `category` (one of: gate, framework, testing, performance, convention, tooling), `source_project`, `source_sprint`
-   - For each gate failure in this sprint:
-     call `mcp__flowstate__record_gate_failure` with `project`, `sprint`, `gate_type` (build/lint/test/coverage), `error_summary`, `error_detail`, `fix_applied`
-   - If the MCP tools are unreachable, skip — this is best-effort, never blocking.
-
-10. **Coverage floor check**:
-   - Compare current `coverage_pct` to the baseline's coverage. If coverage regressed (dropped), flag it in the retro and investigate — do not proceed without understanding why.
-   - If coverage has been flat (< 1% change) for 3+ consecutive sprints, note "coverage plateau" in the retro and suggest specific files/paths that need coverage attention.
-   - If `{FLOWSTATE}/flowstate.config.md` specifies a `coverage_threshold` and coverage is below it, treat as a gate failure and fix before continuing.
-
-11. **Write progress file** at `{FLOWSTATE}/progress.md`:
+10. **Write progress file** at `{FLOWSTATE}/progress.md`:
    - **First, read the existing `{FLOWSTATE}/progress.md`** (if it exists) to extract the accumulated Learnings section. Do not skip this step — learnings compound across sprints and losing them degrades future sprint quality.
    - Then write the new progress.md with:
      - What was completed this sprint (list of deliverables)
@@ -324,7 +296,7 @@ If any script outputs to stdout in a pipeline (pipes to another process), it mus
      - **Learnings** (accumulated): copy ALL prior learnings from the old progress.md, then append new ones from this sprint. Patterns that worked, pitfalls to avoid, framework quirks. This section only grows — never remove entries unless they're proven wrong.
    This is operational state for the next agent session, not analysis.
 
-12. **Completion check** -- print this checklist with [x] or [MISSING] for each:
+11. **Completion check** -- print this checklist with [x] or [MISSING] for each:
    - `{FLOWSTATE}/metrics/sprint-N-metrics.json` exists (raw MCP metrics response)
    - `{FLOWSTATE}/metrics/sprint-N-import.json` exists (complete import-ready JSON, validated via MCP dry_run)
    - `{FLOWSTATE}/retrospectives/sprint-N.md` contains:
@@ -336,9 +308,6 @@ If any script outputs to stdout in a pipeline (pipes to another process), it mus
    - `docs/ROADMAP.md` updated (phase marked done, Current State refreshed)
    - Sprint code committed
    - Mission Control updated (status + step marked done), or "MCP unavailable" if server unreachable
-   - Lessons recorded to DuckDB (new learnings from this sprint), or "MCP unavailable"
-   - Gate failures recorded to DuckDB (if any gates failed), or "MCP unavailable"
-   - Coverage floor checked (no regression, no plateau flagged)
    Fix any MISSING items before declaring done.
 
 **This sprint is now complete.** If you are running as a subagent, return control to the orchestrator. Do NOT proceed to Auto-Continue — that section runs ONLY in the main orchestrator session.
@@ -366,13 +335,11 @@ After Phase 3 completes, check whether to continue:
    - If valid: call `mcp__flowstate__import_sprint` with `dry_run=false` to write to sprints.json
    - If validation fails: log a warning in progress.md but don't block — the human can import manually later
 
-6. **Gather cross-project lessons.** If `mcp__flowstate__get_lessons` is available, call it with the current project slug. Include the returned lessons in the subagent prompt as a "Cross-Project Learnings" section.
-
-7. **Launch the next sprint as a subagent.** Use `Task` with `subagent_type: "general-purpose"` and `mode: "bypassPermissions"`. Pass a prompt containing:
+6. **Launch the next sprint as a subagent.** Use `Task` with `subagent_type: "general-purpose"` and `mode: "bypassPermissions"`. Pass a prompt containing:
    - The project path and `{FLOWSTATE}` path
    - "Read `.claude/skills/flowstate/SKILL.md`. Run Sprint N+1: Phase 1+2 (THINK then EXECUTE) and Phase 3 (SHIP)."
    - "Read `{FLOWSTATE}/progress.md` for handoff state and accumulated learnings from previous sprints."
-   - The cross-project lessons from step 6 (if any)
+   - "Read `{FLOWSTATE}/codebase-map.md` for the current codebase structure, module dependencies, and key patterns. Use this to understand where new code should go and how it should integrate with existing modules. Do not re-explore files that the map already describes."
    - "Stop after the Phase 3 completion check. Do NOT run Auto-Continue."
 
    **Architecture rules:**
